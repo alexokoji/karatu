@@ -43,12 +43,14 @@ export default function StudentDashboard() {
         
         // Load transactions for progress data
         if (token) {
+          let txnDataLocal = []
           const txnRes = await fetch(`${API_URL}/transactions`, {
             headers: { Authorization: `Bearer ${token}` }
           })
           if (txnRes.ok) {
             const txnData = await txnRes.json()
-            setTransactions(txnData)
+            txnDataLocal = Array.isArray(txnData) ? txnData : []
+            setTransactions(txnDataLocal)
           }
           
           // Load private sessions
@@ -67,7 +69,7 @@ export default function StudentDashboard() {
           ])
           
           // Calculate stats from transactions
-          const totalStudyTime = txnData.reduce((sum, t) => sum + (t.type === 'Course' ? 45 : 0), 0) // 45 mins per course
+          const totalStudyTime = txnDataLocal.reduce((sum, t) => sum + (t.type === 'Course' ? 45 : 0), 0) // 45 mins per course
           const weeklyChange = Math.floor(Math.random() * 20) + 5 // Simulate 5-25% change
           setStats({ totalStudyTime, weeklyChange })
         }
