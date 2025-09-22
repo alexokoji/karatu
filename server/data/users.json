@@ -1,0 +1,9 @@
+[
+  {
+    "id": "86488259-adc6-4989-8551-e8a6da6d8120",
+    "name": "Alex Okoji",
+    "email": "alex@example.com",
+    "passwordHash": "$2b$10$RUl3zi5rLR30hOh1/omIH.GGsZdHkQjdznLhvA0yRXbIr/t6v85UG",
+    "role": "student"
+  }
+]
