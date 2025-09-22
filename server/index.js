@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
-const { PrismaClient } = require('./generated/prisma');
+const { PrismaClient } = require('@prisma/client');
 
 const app = express();
 const server = createServer(app);
