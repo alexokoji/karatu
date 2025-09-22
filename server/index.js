@@ -18,7 +18,23 @@ const io = new Server(server, {
   }
 });
 
-app.use(cors());
+// CORS configuration for Render
+const allowedOrigins = (process.env.ALLOWED_ORIGIN || '*')
+  .split(',')
+  .map(s => s.trim());
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization']
+}));
+app.options('*', cors());
 app.use(express.json());
 
 const DATA_DIR = path.join(__dirname, 'data');
