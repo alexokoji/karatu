@@ -94,6 +94,21 @@ app.post('/auth/login', async (req, res) => {
   const token = signToken(user);
   return res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
 });
+// Public tutors list (minimal profile for discovery)
+app.get('/tutors', (req, res) => {
+  const users = read('users', []);
+  const tutors = users
+    .filter(u => u.role === 'tutor')
+    .map(u => ({
+      id: u.id,
+      name: u.name,
+      slug: String(u.name || 'tutor-user').toLowerCase().split(' ').join('-'),
+      lang: 'Yoruba',
+      role: 'Tutor',
+      img: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop'
+    }));
+  res.json(tutors);
+});
 
 app.get('/auth/me', auth(), (req, res) => {
   return res.json({ user: req.user });
