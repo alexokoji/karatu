@@ -161,23 +161,23 @@ export default function Courses() {
             return (
               <div key={language} className="mb-10">
                 <h2 className="text-2xl font-bold mb-4">{language} Courses</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                   {list.map((c)=> (
                     <div key={c.slug || c.title} className="flex flex-col rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-xl transition-all hover:-translate-y-1 hover:border-primary-100 hover:bg-primary-50/20">
                       <div className="w-full h-48 bg-center bg-no-repeat bg-cover" style={{backgroundImage:`url(${slugToThumb[c.slug] || c.img})`}} />
-                      <div className="p-6 flex flex-col flex-grow">
-                        <h3 className="text-xl font-bold">{c.title}</h3>
+            <div className="p-6 flex flex-col flex-grow">
+              <h3 className="text-xl font-bold">{c.title}</h3>
                         {c.tutorName && <p className="text-xs text-gray-500 mt-1">By {c.tutorName}</p>}
-                        <p className="text-sm text-gray-600 mt-2">Learn at your pace with cultural insights.</p>
-                        <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
-                          <div className="flex gap-4"><span>{c.lessons} Lessons</span><span>{c.level}</span></div>
-                          <div className="text-primary-700 text-lg font-bold">${'{'}c.price{'}'}</div>
-                        </div>
+              <p className="text-sm text-gray-600 mt-2">Learn at your pace with cultural insights.</p>
+              <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
+                <div className="flex gap-4"><span>{c.lessons} Lessons</span><span>{c.level}</span></div>
+                <div className="text-primary-700 text-lg font-bold">${'{'}c.price{'}'}</div>
+              </div>
                         <Link to={`/courses/${c.slug || c.title.toLowerCase().split(' ')[0]}`} className="mt-6 self-start text-primary-700 font-bold hover:underline">Learn More →</Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            </div>
+          </div>
+        ))}
+      </div>
               </div>
             )
           })}
