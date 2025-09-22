@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { API_URL } from '../config'
 import { useAuth } from '../context/AuthContext'
 
 function getAvg(slug) {
@@ -89,7 +90,7 @@ export default function TutorProfile() {
   useEffect(() => {
     const loadRatings = async () => {
       try {
-        const res = await fetch(`http://localhost:4000/ratings/${t.slug}`)
+        const res = await fetch(`${API_URL}/ratings/${t.slug}`)
         if (res.ok) {
           const arr = await res.json()
           if (Array.isArray(arr) && arr.length) {
@@ -158,7 +159,7 @@ export default function TutorProfile() {
                 onClick={async () => {
                   try {
                     // backend first
-                    const res = await fetch(`http://localhost:4000/ratings/${t.slug}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: n }) })
+                    const res = await fetch(`${API_URL}/ratings/${t.slug}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: n }) })
                     if (res.ok) {
                       const arr = await res.json()
                       const average = arr.length ? Math.round((arr.reduce((a,b)=>a+b,0)/arr.length)*10)/10 : 0

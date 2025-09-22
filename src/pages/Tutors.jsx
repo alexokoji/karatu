@@ -1,6 +1,7 @@
 import { Link, useSearchParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { API_URL } from '../config'
 
 export default function Tutors() {
   const { role, isAuthenticated } = useAuth()
@@ -15,7 +16,7 @@ export default function Tutors() {
   useEffect(() => {
     const load = async () => {
       for (const t of tutors) {
-        try { const res = await fetch(`http://localhost:4000/ratings/${t.slug}`); if (res.ok) { const arr = await res.json(); const avg = arr.length ? Math.round((arr.reduce((a,b)=>a+b,0)/arr.length)*10)/10 : 0; setRemoteRatings(prev => ({ ...prev, [t.slug]: avg })) } } catch {}
+        try { const res = await fetch(`${API_URL}/ratings/${t.slug}`); if (res.ok) { const arr = await res.json(); const avg = arr.length ? Math.round((arr.reduce((a,b)=>a+b,0)/arr.length)*10)/10 : 0; setRemoteRatings(prev => ({ ...prev, [t.slug]: avg })) } } catch {}
       }
     }
     load()
