@@ -13,6 +13,7 @@ import {
   Legend,
 } from 'chart.js'
 import { useAuth } from '../context/AuthContext'
+import { API_URL } from '../config'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 import TutorLayout from '../components/TutorLayout'
@@ -34,7 +35,7 @@ export default function TutorDashboard() {
       try {
         if (token) {
           // Load transactions for earnings data
-          const txnRes = await fetch('http://localhost:4000/transactions', {
+          const txnRes = await fetch(`${API_URL}/transactions`, {
             headers: { Authorization: `Bearer ${token}` }
           })
           if (txnRes.ok) {

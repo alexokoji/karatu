@@ -14,6 +14,7 @@ import {
   Legend,
 } from 'chart.js'
 import { useAuth } from '../context/AuthContext'
+import { API_URL } from '../config'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
@@ -34,7 +35,7 @@ export default function StudentDashboard() {
     const loadData = async () => {
       try {
         // Load courses
-        const coursesRes = await fetch('http://localhost:4000/courses')
+        const coursesRes = await fetch(`${API_URL}/courses`)
         if (coursesRes.ok) {
           const coursesData = await coursesRes.json()
           setCourses(coursesData)
@@ -42,7 +43,7 @@ export default function StudentDashboard() {
         
         // Load transactions for progress data
         if (token) {
-          const txnRes = await fetch('http://localhost:4000/transactions', {
+          const txnRes = await fetch(`${API_URL}/transactions`, {
             headers: { Authorization: `Bearer ${token}` }
           })
           if (txnRes.ok) {
@@ -51,7 +52,7 @@ export default function StudentDashboard() {
           }
           
           // Load private sessions
-          const sessionsRes = await fetch('http://localhost:4000/private-sessions', {
+          const sessionsRes = await fetch(`${API_URL}/private-sessions`, {
             headers: { Authorization: `Bearer ${token}` }
           })
           if (sessionsRes.ok) {

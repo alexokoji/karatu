@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import io from 'socket.io-client'
+import { API_URL, WS_URL } from '../config'
 
 export default function VideoCall() {
   const { sessionId } = useParams()
@@ -45,7 +46,7 @@ export default function VideoCall() {
       try {
         // Load specific private session data
         if (currentSessionId !== 'session-123') {
-          const sessionRes = await fetch(`http://localhost:4000/private-sessions/${currentSessionId}`, {
+        const sessionRes = await fetch(`${API_URL}/private-sessions/${currentSessionId}`, {
             headers: { Authorization: `Bearer ${token}` }
           })
           if (sessionRes.ok) {
@@ -58,7 +59,7 @@ export default function VideoCall() {
           }
         } else {
           // For default session, try to find an active session
-          const sessionsRes = await fetch('http://localhost:4000/private-sessions', {
+          const sessionsRes = await fetch(`${API_URL}/private-sessions`, {
             headers: { Authorization: `Bearer ${token}` }
           })
           if (sessionsRes.ok) {
@@ -74,7 +75,7 @@ export default function VideoCall() {
         }
 
         // Load messages
-        const messagesRes = await fetch(`http://localhost:4000/chats/${currentSessionId}`)
+        const messagesRes = await fetch(`${API_URL}/chats/${currentSessionId}`)
         if (messagesRes.ok) {
           const data = await messagesRes.json()
           setMessages(data)
@@ -104,7 +105,7 @@ export default function VideoCall() {
 
   // Initialize Socket.IO connection
   useEffect(() => {
-    const newSocket = io('http://localhost:4000')
+    const newSocket = io(WS_URL)
     setSocket(newSocket)
     
     newSocket.on('connect', () => {
