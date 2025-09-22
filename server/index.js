@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
+const { PrismaClient } = require('./generated/prisma');
 
 const app = express();
 const server = createServer(app);
@@ -70,10 +71,30 @@ function auth(requiredRoles = []) {
   }
 }
 
+function getPrisma() {
+  try {
+    if (!global.__prisma) global.__prisma = new PrismaClient();
+    return global.__prisma;
+  } catch { return null }
+}
+
 app.post('/auth/register', async (req, res) => {
   const { name, email, password, role } = req.body;
   if (!name || !email || !password || !role) return res.status(400).json({ error: 'Missing fields' });
   if (!['student','tutor','admin'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
+  const prisma = getPrisma();
+  try {
+    if (prisma) {
+      const exists = await prisma.user.findUnique({ where: { email } });
+      if (exists) return res.status(409).json({ error: 'Email already registered' });
+      const hash = await bcrypt.hash(password, 10);
+      const user = await prisma.user.create({ data: { name, email, passwordHash: hash, role } });
+      const token = signToken(user);
+      return res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    }
+  } catch (e) {
+    // fallback to JSON
+  }
   const users = read('users', []);
   if (users.find(u => u.email === email)) return res.status(409).json({ error: 'Email already registered' });
   const hash = await bcrypt.hash(password, 10);
@@ -86,6 +107,17 @@ app.post('/auth/register', async (req, res) => {
 
 app.post('/auth/login', async (req, res) => {
   const { email, password } = req.body;
+  const prisma = getPrisma();
+  try {
+    if (prisma) {
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+      const ok = await bcrypt.compare(password, user.passwordHash);
+      if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+      const token = signToken(user);
+      return res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    }
+  } catch (e) {}
   const users = read('users', []);
   const user = users.find(u => u.email === email);
   if (!user) return res.status(401).json({ error: 'Invalid credentials' });
@@ -114,19 +146,40 @@ app.get('/auth/me', auth(), (req, res) => {
   return res.json({ user: req.user });
 });
 
-// Example protected routes
-app.get('/courses', (req, res) => {
+// Courses
+app.get('/courses', async (req, res) => {
+  const prisma = getPrisma();
+  try {
+    if (prisma) {
+      const courses = await prisma.course.findMany({ include: { tutor: true, lessons: true } });
+      return res.json(courses.map(c => ({ ...c, tutorName: c.tutor?.name })));
+    }
+  } catch {}
   const courses = read('courses', []);
   res.json(courses);
 });
-app.post('/courses', auth(['tutor','admin']), (req, res) => {
+app.post('/courses', auth(['tutor','admin']), async (req, res) => {
+  const prisma = getPrisma();
+  try {
+    if (prisma) {
+      const c = await prisma.course.create({ data: { ...req.body, id: uuid() } });
+      return res.json(c);
+    }
+  } catch {}
   const courses = read('courses', []);
   const c = { id: uuid(), ...req.body };
   courses.push(c);
   write('courses', courses);
   res.json(c);
 });
-app.put('/courses/:id', auth(['tutor','admin']), (req, res) => {
+app.put('/courses/:id', auth(['tutor','admin']), async (req, res) => {
+  const prisma = getPrisma();
+  try {
+    if (prisma) {
+      const c = await prisma.course.update({ where: { id: req.params.id }, data: req.body });
+      return res.json(c);
+    }
+  } catch {}
   const courses = read('courses', []);
   const idx = courses.findIndex(c => c.id === req.params.id);
   if (idx < 0) return res.status(404).json({ error: 'Not found' });
@@ -134,7 +187,14 @@ app.put('/courses/:id', auth(['tutor','admin']), (req, res) => {
   write('courses', courses);
   res.json(courses[idx]);
 });
-app.delete('/courses/:id', auth(['tutor','admin']), (req, res) => {
+app.delete('/courses/:id', auth(['tutor','admin']), async (req, res) => {
+  const prisma = getPrisma();
+  try {
+    if (prisma) {
+      await prisma.course.delete({ where: { id: req.params.id } });
+      return res.status(204).send();
+    }
+  } catch {}
   const courses = read('courses', []);
   const next = courses.filter(c => c.id !== req.params.id);
   write('courses', next);
@@ -168,12 +228,27 @@ app.put('/schedules', auth(['tutor','admin']), (req, res) => {
   res.json(all[req.user.id]);
 });
 
-// Tutor ratings by slug
-app.get('/ratings/:slug', (req, res) => {
+// Ratings
+app.get('/ratings/:slug', async (req, res) => {
+  const prisma = getPrisma();
+  try {
+    if (prisma) {
+      const arr = await prisma.rating.findMany({ where: { tutorSlug: req.params.slug } });
+      return res.json(arr.map(r => r.value));
+    }
+  } catch {}
   const all = read('ratings', {});
   res.json(all[req.params.slug] || []);
 });
-app.post('/ratings/:slug', auth(['student','admin']), (req, res) => {
+app.post('/ratings/:slug', auth(['student','admin']), async (req, res) => {
+  const prisma = getPrisma();
+  try {
+    if (prisma) {
+      await prisma.rating.create({ data: { tutorSlug: req.params.slug, value: Number(req.body.value) || 0, userId: req.user.id } });
+      const arr = await prisma.rating.findMany({ where: { tutorSlug: req.params.slug } });
+      return res.json(arr.map(r => r.value));
+    }
+  } catch {}
   const all = read('ratings', {});
   const list = all[req.params.slug] || [];
   list.push(Number(req.body.value) || 0);
@@ -253,6 +328,19 @@ app.post('/chats/:sessionId', (req, res) => {
   all[req.params.sessionId] = list;
   write('chats', all);
   res.json(msg);
+});
+
+// Quizzes
+app.get('/quizzes', (req, res) => {
+  const quizzes = read('quizzes', []);
+  res.json(quizzes);
+});
+app.post('/quizzes', auth(['tutor','admin']), (req, res) => {
+  const quizzes = read('quizzes', []);
+  const q = { id: uuid(), date: new Date().toISOString(), ...req.body };
+  quizzes.unshift(q);
+  write('quizzes', quizzes);
+  res.json(q);
 });
 
 // WebSocket signaling for video calls
