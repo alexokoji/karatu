@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { API_URL } from '../config';
 
 const AuthContext = createContext(null);
 
@@ -15,7 +16,7 @@ export function AuthProvider({ children }) {
     const hydrate = async () => {
       if (!token) return
       try {
-        const res = await fetch('http://localhost:4000/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+        const res = await fetch(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
         if (!res.ok) throw new Error('bad')
         const data = await res.json()
         if (data?.user) {
@@ -36,14 +37,14 @@ export function AuthProvider({ children }) {
     isAuthenticated: role !== 'guest',
     setUser,
     async register({ name, email, password, role }) {
-      const res = await fetch('http://localhost:4000/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password, role }) })
+      const res = await fetch(`${API_URL}/auth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password, role }) })
       if (!res.ok) throw new Error('Registration failed')
       const data = await res.json()
       setToken(data.token); setRole(data.user.role); setUser({ id: data.user.id, name: data.user.name, email: data.user.email })
       return data
     },
     async login({ email, password }) {
-      const res = await fetch('http://localhost:4000/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) })
+      const res = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) })
       if (!res.ok) throw new Error('Login failed')
       const data = await res.json()
       setToken(data.token); setRole(data.user.role); setUser({ id: data.user.id, name: data.user.name, email: data.user.email })
