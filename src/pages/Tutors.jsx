@@ -6,22 +6,14 @@ import { API_URL } from '../config'
 export default function Tutors() {
   const { role, isAuthenticated } = useAuth()
   const rate = (() => { try { return Number(localStorage.getItem('tutorPrivateRate')) || 25 } catch { return 25 } })()
-  const [tutors, setTutors] = useState([
-    {slug:'aisha-bello', name:'Aisha Bello', role:'Yoruba Language Expert', lang:'Yoruba', img:'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop'},
-    {slug:'chukwuemeka-okafor', name:'Chukwuemeka Okafor', role:'Igbo Language Specialist', lang:'Igbo', img:'https://images.pexels.com/photos/2379429/pexels-photo-2379429.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop'},
-    {slug:'fatima-said', name:'Fatima Said', role:'Swahili Language Pro', lang:'Swahili', img:'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop'},
-  ])
+  const [tutors, setTutors] = useState([])
   useEffect(() => {
     const fetchTutors = async () => {
       try {
         const res = await fetch(`${API_URL}/tutors`)
         if (res.ok) {
           const data = await res.json()
-          if (Array.isArray(data) && data.length) {
-            // Merge with existing static featured tutors
-            const merged = [...data, ...tutors.filter(s => !data.find(d => d.slug === s.slug))]
-            setTutors(merged)
-          }
+          if (Array.isArray(data)) setTutors(data)
         }
       } catch {}
     }

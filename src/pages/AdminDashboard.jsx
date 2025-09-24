@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { API_URL } from '../config'
 
 export default function AdminDashboard() {
   const { token } = useAuth()
@@ -51,10 +52,10 @@ export default function AdminDashboard() {
         if (token) {
           // Load all data from backend
           const [coursesRes, sessionsRes, txnRes, promotionsRes] = await Promise.all([
-            fetch('http://localhost:4000/courses', { headers: { Authorization: `Bearer ${token}` } }),
-            fetch('http://localhost:4000/private-sessions', { headers: { Authorization: `Bearer ${token}` } }),
-            fetch('http://localhost:4000/transactions', { headers: { Authorization: `Bearer ${token}` } }),
-            fetch('http://localhost:4000/promotions', { headers: { Authorization: `Bearer ${token}` } })
+            fetch(`${API_URL}/courses`, { headers: { Authorization: `Bearer ${token}` } }),
+            fetch(`${API_URL}/private-sessions`, { headers: { Authorization: `Bearer ${token}` } }),
+            fetch(`${API_URL}/transactions`, { headers: { Authorization: `Bearer ${token}` } }),
+            fetch(`${API_URL}/promotions`, { headers: { Authorization: `Bearer ${token}` } })
           ])
           
           if (coursesRes.ok) setTutorCourses(await coursesRes.json())

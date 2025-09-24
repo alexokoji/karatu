@@ -15,16 +15,11 @@ function getAvg(slug) {
 export default function TutorProfile() {
   const { slug } = useParams()
   const { isAuthenticated, role } = useAuth()
-  const tutors = [
-    {slug:'aisha-bello', name:'Aisha Bello', language:'Yoruba', img:'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop', video:'https://www.w3schools.com/html/mov_bbb.mp4'},
-    {slug:'chukwuemeka-okafor', name:'Chukwuemeka Okafor', language:'Igbo', img:'https://images.pexels.com/photos/2379429/pexels-photo-2379429.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop', video:'https://www.w3schools.com/html/mov_bbb.mp4'},
-    {slug:'fatima-said', name:'Fatima Said', language:'Swahili', img:'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop', video:'https://www.w3schools.com/html/mov_bbb.mp4'},
-  ]
-  const t = tutors.find(x=>x.slug===slug) || tutors[0]
-  const [avg, setAvg] = useState(getAvg(t.slug))
+  const [t, setTutor] = useState(null)
+  const [avg, setAvg] = useState(0)
   const [hover, setHover] = useState(0)
-  // Removed one-off hourly availability in favor of monthly plans
-  const monthly = (() => { try { return JSON.parse(localStorage.getItem('tutorMonthlySchedules')) || [] } catch { return [] } })()
+  // Monthly schedules should come from backend; hide if not available publicly
+  const monthly = []
   const rate = (() => { try { return Number(localStorage.getItem('tutorPrivateRate')) || 25 } catch { return 25 } })()
   const monthlyPrice = (sessionsPerWeek) => {
     // 4 weeks x sessions/week x 1h x rate
@@ -88,9 +83,21 @@ export default function TutorProfile() {
     } catch {}
   }
   useEffect(() => {
+    const loadTutor = async () => {
+      try {
+        const res = await fetch(`${API_URL}/tutors`)
+        if (res.ok) {
+          const arr = await res.json()
+          const found = Array.isArray(arr) ? arr.find(x => x.slug === slug) : null
+          if (found) setTutor(found)
+        }
+      } catch {}
+    }
+    loadTutor()
     const loadRatings = async () => {
       try {
-        const res = await fetch(`${API_URL}/ratings/${t.slug}`)
+        if (!slug) return
+        const res = await fetch(`${API_URL}/ratings/${slug}`)
         if (res.ok) {
           const arr = await res.json()
           if (Array.isArray(arr) && arr.length) {
@@ -101,7 +108,8 @@ export default function TutorProfile() {
       } catch {}
     }
     loadRatings()
-  }, [t.slug])
+  }, [slug])
+  if (!t) return <div className="px-4 md:px-10 lg:px-20 py-10">Loading...</div>
   return (
     <div className="px-4 md:px-10 lg:px-20 py-10">
       <div className="mb-4"><Link to="/tutors" className="text-primary-700 hover:underline">← Back to Tutors</Link></div>

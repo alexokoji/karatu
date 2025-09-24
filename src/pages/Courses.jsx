@@ -1,5 +1,6 @@
 import { Link, useSearchParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
+import { API_URL } from '../config'
 
 export default function Courses() {
   const persisted = (() => { try { return JSON.parse(localStorage.getItem('tutorCourses')) || [] } catch { return [] } })()
@@ -7,7 +8,7 @@ export default function Courses() {
   const [loading, setLoading] = useState(true)
   useEffect(() => {
     const load = async () => {
-      try { const res = await fetch('http://localhost:4000/courses'); if (res.ok) { const data = await res.json(); if (Array.isArray(data)) setApiCourses(data) } } catch {}
+      try { const res = await fetch(`${API_URL}/courses`); if (res.ok) { const data = await res.json(); if (Array.isArray(data)) setApiCourses(data) } } catch {}
       setLoading(false)
     }
     load()
@@ -32,7 +33,7 @@ export default function Courses() {
   const [promoted, setPromoted] = useState(() => { try { return JSON.parse(localStorage.getItem('promotedCourses')) || [] } catch { return [] } })
   useEffect(() => {
     const loadPromos = async () => {
-      try { const res = await fetch('http://localhost:4000/promotions'); if (res.ok) { const list = await res.json(); if (Array.isArray(list)) setPromoted(list) } } catch {}
+      try { const res = await fetch(`${API_URL}/promotions`); if (res.ok) { const list = await res.json(); if (Array.isArray(list)) setPromoted(list) } } catch {}
     }
     loadPromos()
   }, [])

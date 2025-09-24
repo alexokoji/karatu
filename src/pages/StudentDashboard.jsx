@@ -62,11 +62,14 @@ export default function StudentDashboard() {
             setPrivateSessions(sessionsData)
           }
           
-          // Load quizzes (mock data for now - would come from backend)
-          setQuizzes([
-            { id: 1, title: 'Yoruba Quiz 1', due: 'Due: July 20, 2024', course: 'Yoruba for Beginners' },
-            { id: 2, title: 'Igbo Quiz 2', due: 'Due: July 25, 2024', course: 'Igbo Intermediate' },
-          ])
+          // Load quizzes from backend
+          try {
+            const qRes = await fetch(`${API_URL}/quizzes`)
+            if (qRes.ok) {
+              const list = await qRes.json()
+              if (Array.isArray(list)) setQuizzes(list)
+            }
+          } catch {}
           
           // Calculate stats from transactions
           const totalStudyTime = txnDataLocal.reduce((sum, t) => sum + (t.type === 'Course' ? 45 : 0), 0) // 45 mins per course
@@ -97,13 +100,7 @@ export default function StudentDashboard() {
     }).filter(Boolean)
   }, [transactions, courses])
 
-  // Fallback to static data if no backend data
-  const staticEnrolled = [
-    { title: 'Yoruba for Beginners', totalLessons: 10, img: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=800' },
-    { title: 'Igbo Intermediate', totalLessons: 12, img: 'https://images.pexels.com/photos/3184325/pexels-photo-3184325.jpeg?auto=compress&cs=tinysrgb&w=800' },
-    { title: 'Hausa Advanced', totalLessons: 8, img: 'https://images.pexels.com/photos/3184643/pexels-photo-3184643.jpeg?auto=compress&cs=tinysrgb&w=800' },
-  ]
-  const allEnrolled = enrolledCourses.length > 0 ? enrolledCourses : staticEnrolled
+  const allEnrolled = enrolledCourses
   const fallbackByCourse = {
     'Yoruba for Beginners': 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=800',
     'Igbo Intermediate': 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800',
@@ -111,40 +108,30 @@ export default function StudentDashboard() {
   };
 
   const progressData = useMemo(() => {
-    // Generate study time data from transactions
-    const now = new Date()
     let labels, data
-    
     if (period === 'Weekly') {
-      labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+      labels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
       data = new Array(7).fill(0)
-      // Simulate study time based on course completions
+      // Add 45 mins per course transaction to the weekday of its date
       transactions.forEach(t => {
         if (t.type === 'Course') {
-          const day = new Date(t.date).getDay()
-          data[day] += Math.random() * 60 + 30 // 30-90 minutes per course
+          const d = new Date(t.date)
+          const dayIdx = isNaN(d.getDay()) ? 0 : d.getDay()
+          data[dayIdx] += 45
         }
       })
     } else {
       labels = ['W1','W2','W3','W4']
       data = new Array(4).fill(0)
+      // Add 180 mins per course transaction into its week-of-month bucket
       transactions.forEach(t => {
         if (t.type === 'Course') {
-          const week = Math.min(3, Math.floor((new Date(t.date).getDate() - 1) / 7))
-          data[week] += Math.random() * 120 + 60 // 60-180 minutes per week
+          const d = new Date(t.date)
+          const week = isNaN(d.getDate()) ? 0 : Math.min(3, Math.floor((d.getDate() - 1) / 7))
+          data[week] += 180
         }
       })
     }
-    
-    // Fallback to static data if no transactions
-    if (transactions.length === 0) {
-      const weekly = { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], data: [60, 40, 50, 70, 30, 20, 55] }
-      const monthly = { labels: ['W1','W2','W3','W4'], data: [180, 220, 200, 240] }
-      const src = period === 'Monthly' ? monthly : weekly
-      labels = src.labels
-      data = src.data
-    }
-    
     return {
       labels,
       datasets: [
@@ -185,6 +172,9 @@ export default function StudentDashboard() {
           <div className="col-span-1 lg:col-span-2">
             <section className="mb-8">
               <h2 className="mb-4 text-2xl font-bold text-gray-900">Enrolled Courses</h2>
+              {allEnrolled.length === 0 ? (
+                <p className="text-sm text-gray-500">No enrolled courses yet.</p>
+              ) : (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {allEnrolled.map((c) => (
                   <button onClick={() => setLastViewed(c.title)} key={c.title} className={`text-left group relative flex flex-col overflow-hidden rounded-xl border bg-white/70 backdrop-blur-sm shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 hover:border-primary-200 active:translate-y-px active:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 ${lastViewed === c.title ? 'border-primary-300 ring-2 ring-primary-200' : 'border-gray-200'}`}>
@@ -227,6 +217,7 @@ export default function StudentDashboard() {
                   </button>
                 ))}
               </div>
+              )}
             </section>
 
             <section>
@@ -236,9 +227,7 @@ export default function StudentDashboard() {
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <p className="text-lg font-semibold text-gray-800">Weekly Activity</p>
-                    <p className="text-4xl font-bold text-gray-900">
-                      {stats.totalStudyTime > 0 ? `${Math.floor(stats.totalStudyTime / 60)}h ${stats.totalStudyTime % 60}m` : '8h 32m'}
-                    </p>
+                    <p className="text-4xl font-bold text-gray-900">{`${Math.floor(stats.totalStudyTime / 60)}h ${stats.totalStudyTime % 60}m`}</p>
                     <p className="text-sm font-medium text-primary-600">
                       +{stats.weeklyChange}% from last week
                     </p>
@@ -309,6 +298,9 @@ export default function StudentDashboard() {
 
             <section>
               <h2 className="mb-4 text-2xl font-bold text-gray-900">Upcoming Quizzes</h2>
+              {quizzes.length === 0 ? (
+                <p className="text-sm text-gray-500">No quizzes available.</p>
+              ) : (
               <div className="space-y-4">
                 {quizzes.map((q) => (
                   <div key={q.title} className="group relative flex items-center gap-4 rounded-xl border border-gray-200 bg-white/70 backdrop-blur-sm p-4 shadow-sm transition-all hover:shadow-xl hover:border-primary-100 hover:-translate-y-1 focus-within:ring-2 focus-within:ring-primary-600 focus-within:ring-offset-2">
@@ -317,13 +309,14 @@ export default function StudentDashboard() {
                       <span className="text-lg font-bold">Q</span>
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-800">{q.title}</p>
-                      <p className="text-sm text-gray-500">{q.due}</p>
+                      <p className="font-semibold text-gray-800">{q.title || 'Quiz'}</p>
+                      <p className="text-sm text-gray-500">{q.due || ''}</p>
                     </div>
                     <Link to={`/quiz/${q.title.toLowerCase().split(' ').join('-')}`} className="ml-auto text-gray-400 transition-colors group-hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 active:translate-y-px"><FaChevronRight /></Link>
                   </div>
                 ))}
               </div>
+              )}
             </section>
 
             {/* Private sessions removed from student side for monthly subscriptions */}
@@ -341,7 +334,7 @@ function PrivatePay({ sessionId, amount }) {
   const handlePayment = async () => {
     try {
       // Mark session as paid
-      const res = await fetch(`http://localhost:4000/private-sessions/${sessionId}`, {
+      const res = await fetch(`${API_URL}/private-sessions/${sessionId}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -352,7 +345,7 @@ function PrivatePay({ sessionId, amount }) {
       
       if (res.ok) {
         // Create transaction
-        await fetch('http://localhost:4000/transactions', {
+        await fetch(`${API_URL}/transactions`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',

@@ -13,13 +13,6 @@ export default function Quiz() {
           if (Array.isArray(data)) setQuizzes(data)
         }
       } catch {}
-      if (quizzes.length === 0) {
-        setQuizzes([
-          { id: 'yoruba-1', title: 'Yoruba Basics', desc: 'Test greetings and common phrases.', img: 'https://images.pexels.com/photos/1181396/pexels-photo-1181396.jpeg?auto=compress&cs=tinysrgb&w=1000' },
-          { id: 'igbo-1', title: 'Igbo Vocabulary', desc: 'Common nouns and verbs practice.', img: 'https://images.pexels.com/photos/4260310/pexels-photo-4260310.jpeg?auto=compress&cs=tinysrgb&w=1000' },
-          { id: 'swahili-1', title: 'Swahili Numbers', desc: 'Numbers and counting challenge.', img: 'https://images.pexels.com/photos/4144222/pexels-photo-4144222.jpeg?auto=compress&cs=tinysrgb&w=1000' },
-        ])
-      }
     }
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -28,7 +21,9 @@ export default function Quiz() {
     <div className="px-4 md:px-10 lg:px-20 py-10">
       <h1 className="text-3xl md:text-4xl font-bold text-center mb-8">Quizzes</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {quizzes.map(q => (
+        {quizzes.length === 0 ? (
+          <p className="text-sm text-gray-500 col-span-full text-center">No quizzes available.</p>
+        ) : quizzes.map(q => (
           <div key={q.id || q.title} className="flex flex-col rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-xl transition-all hover:-translate-y-1 hover:border-primary-100 hover:bg-primary-50/20">
             <div className="w-full h-40 bg-center bg-cover" style={{backgroundImage:`url(${q.img || 'https://images.pexels.com/photos/1181396/pexels-photo-1181396.jpeg?auto=compress&cs=tinysrgb&w=1000'})`}} />
             <div className="p-6 flex flex-col flex-grow">
