@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import TutorLayout from '../components/TutorLayout'
 import { useAuth } from '../context/AuthContext'
+import { API_URL } from '../config'
 
 export default function TutorPrivate() {
   const { token } = useAuth()
@@ -10,18 +11,18 @@ export default function TutorPrivate() {
   useEffect(() => { try { localStorage.setItem('tutorPrivateSessions', JSON.stringify(sessions)) } catch {} }, [sessions])
   useEffect(() => {
     const load = async () => {
-      try { const res = await fetch('http://localhost:4000/private-sessions', { headers: { Authorization: token?`Bearer ${token}`:undefined } }); if (res.ok) { const data = await res.json(); if (Array.isArray(data)) setSessions(data) } } catch {}
+      try { const res = await fetch(`${API_URL}/private-sessions`, { headers: { Authorization: token?`Bearer ${token}`:undefined } }); if (res.ok) { const data = await res.json(); if (Array.isArray(data)) setSessions(data) } } catch {}
     }
     if (token) load()
   }, [token])
 
   const accept = async (id) => {
-    setSessions(prev => prev.map(s => s.id===id ? { ...s, status: 'Accepted' } : s))
-    try { await fetch(`http://localhost:4000/private-sessions/${id}`, { method: 'PUT', headers: { 'Content-Type':'application/json', Authorization: token?`Bearer ${token}`:undefined }, body: JSON.stringify({ status: 'Accepted' }) }) } catch {}
+    setSessions(prev => prev.map(s => s.id===id ? { ...s, status: 'accepted' } : s))
+    try { await fetch(`${API_URL}/private-sessions/${id}`, { method: 'PUT', headers: { 'Content-Type':'application/json', Authorization: token?`Bearer ${token}`:undefined }, body: JSON.stringify({ status: 'accepted' }) }) } catch {}
   }
   const decline = async (id) => {
-    setSessions(prev => prev.map(s => s.id===id ? { ...s, status: 'Declined' } : s))
-    try { await fetch(`http://localhost:4000/private-sessions/${id}`, { method: 'PUT', headers: { 'Content-Type':'application/json', Authorization: token?`Bearer ${token}`:undefined }, body: JSON.stringify({ status: 'Declined' }) }) } catch {}
+    setSessions(prev => prev.map(s => s.id===id ? { ...s, status: 'declined' } : s))
+    try { await fetch(`${API_URL}/private-sessions/${id}`, { method: 'PUT', headers: { 'Content-Type':'application/json', Authorization: token?`Bearer ${token}`:undefined }, body: JSON.stringify({ status: 'declined' }) }) } catch {}
   }
 
   const computeDuration = (range) => {

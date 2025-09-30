@@ -14,7 +14,7 @@ function getAvg(slug) {
 
 export default function TutorProfile() {
   const { slug } = useParams()
-  const { isAuthenticated, role } = useAuth()
+  const { isAuthenticated, role, token, user } = useAuth()
   const [t, setTutor] = useState(null)
   const [avg, setAvg] = useState(0)
   const [hover, setHover] = useState(0)
@@ -26,59 +26,53 @@ export default function TutorProfile() {
     const weeks = 4
     return weeks * sessionsPerWeek * rate
   }
-  const requestSlot = (slot) => {
+  const requestSlot = async (slot) => {
     try {
-      const raw = localStorage.getItem('tutorPrivateSessions')
-      const sessions = raw ? JSON.parse(raw) : []
+      if (!isAuthenticated || role !== 'student') { alert('Please log in as a student to request a private session.'); return }
       const parts = String(slot.time).split('-').map(s=>s.trim())
       const start = parts[0] || slot.time
       const end = parts[1] || ''
-      let durationLabel = ''
-      try {
-        const [sh, sm] = start.split(':').map(Number)
-        const [eh, em] = end ? end.split(':').map(Number) : [sh, sm]
-        const mins = (eh*60+em) - (sh*60+sm)
-        if (!isNaN(mins) && mins>0) {
-          const h = Math.floor(mins/60)
-          const m = mins%60
-          durationLabel = h>0 ? `${h}h${m?` ${m}m`:''}` : `${m}m`
-        }
-      } catch {}
-      sessions.unshift({
-        id: Date.now(),
-        studentName: 'Student User',
-        tutorName: t.name,
-        topic: 'Private practice',
-        date: slot.day,
-        sessionTime: `${start}${end?` - ${end}`:''}`,
-        duration: durationLabel,
-        status: 'Pending'
+      await fetch(`${API_URL}/private-sessions`, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', Authorization: token?`Bearer ${token}`:undefined },
+        body: JSON.stringify({
+          studentId: user?.id,
+          tutorId: t.id,
+          studentName: user?.name || 'Student User',
+          tutorName: t.name,
+          topic: 'Private practice',
+          date: slot.day,
+          sessionTime: `${start}${end?` - ${end}`:''}`,
+          status: 'Pending'
+        })
       })
-      localStorage.setItem('tutorPrivateSessions', JSON.stringify(sessions))
       alert('Request sent for the selected slot!')
     } catch {}
   }
-  const subscribePlan = (plan) => {
+  const subscribePlan = async (plan) => {
     try {
+      if (!isAuthenticated || role !== 'student') { alert('Please log in as a student to subscribe.'); return }
       const sessionsPerWeek = (plan.sessions||[]).length
       if (!sessionsPerWeek) { alert('This plan has no sessions yet.'); return }
       const price = monthlyPrice(sessionsPerWeek)
-      const raw = localStorage.getItem('tutorPrivateSessions')
-      const sessions = raw ? JSON.parse(raw) : []
-      sessions.unshift({
-        id: Date.now(),
-        studentName: 'Student User',
-        tutorName: t.name,
-        topic: `Monthly subscription: ${plan.name}`,
-        planId: plan.id,
-        planName: plan.name,
-        planSessions: plan.sessions,
-        sessionsPerWeek,
-        monthlyPrice: price,
-        status: 'Pending',
-        type: 'monthly'
+      await fetch(`${API_URL}/private-sessions`, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', Authorization: token?`Bearer ${token}`:undefined },
+        body: JSON.stringify({
+          studentId: user?.id,
+          tutorId: t.id,
+          studentName: user?.name || 'Student User',
+          tutorName: t.name,
+          topic: `Monthly subscription: ${plan.name}`,
+          planId: plan.id,
+          planName: plan.name,
+          planSessions: plan.sessions,
+          sessionsPerWeek,
+          monthlyPrice: price,
+          status: 'Pending',
+          type: 'monthly'
+        })
       })
-      localStorage.setItem('tutorPrivateSessions', JSON.stringify(sessions))
       alert('Monthly subscription request sent!')
     } catch {}
   }

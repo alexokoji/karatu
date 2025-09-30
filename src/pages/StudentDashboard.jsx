@@ -339,7 +339,7 @@ function PrivatePay({ sessionId, amount }) {
   const handlePayment = async () => {
     try {
       // Mark session as paid
-      const res = await fetch(`http://localhost:4000/private-sessions/${sessionId}`, {
+      const res = await fetch(`${API_URL}/private-sessions/${sessionId}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -350,7 +350,7 @@ function PrivatePay({ sessionId, amount }) {
       
       if (res.ok) {
         // Create transaction
-        await fetch('http://localhost:4000/transactions', {
+        await fetch(`${API_URL}/transactions`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
