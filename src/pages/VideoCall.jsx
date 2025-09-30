@@ -196,6 +196,16 @@ export default function VideoCall() {
   useEffect(() => {
     if (!socket || !peerConnection) return
 
+    const createAndSendOffer = async () => {
+      try {
+        const offer = await peerConnection.createOffer()
+        await peerConnection.setLocalDescription(offer)
+        socket.emit('offer', { offer, sessionId: currentSessionId })
+      } catch (error) {
+        console.error('Error creating/sending offer:', error)
+      }
+    }
+
     const handleOffer = async (data) => {
       try {
         await peerConnection.setRemoteDescription(data.offer)
@@ -230,11 +240,16 @@ export default function VideoCall() {
     socket.on('offer', handleOffer)
     socket.on('answer', handleAnswer)
     socket.on('ice-candidate', handleIceCandidate)
+    socket.on('user-joined', () => {
+      // Another peer joined this session; initiate the offer from this side
+      createAndSendOffer()
+    })
 
     return () => {
       socket.off('offer', handleOffer)
       socket.off('answer', handleAnswer)
       socket.off('ice-candidate', handleIceCandidate)
+      socket.off('user-joined')
     }
   }, [socket, peerConnection, currentSessionId])
 
@@ -283,7 +298,7 @@ export default function VideoCall() {
     
     try {
       // Save to backend
-      const res = await fetch(`http://localhost:4000/chats/${currentSessionId}`, {
+      const res = await fetch(`${API_URL}/chats/${currentSessionId}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

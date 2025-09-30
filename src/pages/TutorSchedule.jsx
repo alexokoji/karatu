@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import TutorLayout from '../components/TutorLayout'
 import { useAuth } from '../context/AuthContext'
+import { API_URL } from '../config'
 
 export default function TutorSchedule() {
   const { token } = useAuth()
@@ -16,7 +17,7 @@ export default function TutorSchedule() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch('http://localhost:4000/schedules', { headers: { Authorization: token?`Bearer ${token}`:undefined } })
+        const res = await fetch(`${API_URL}/schedules`, { headers: { Authorization: token?`Bearer ${token}`:undefined } })
         if (res.ok) {
           const list = await res.json()
           if (Array.isArray(list)) setMonthly(list)
@@ -28,7 +29,7 @@ export default function TutorSchedule() {
   useEffect(() => {
     const save = async () => {
       try {
-        await fetch('http://localhost:4000/schedules', { method: 'PUT', headers: { 'Content-Type':'application/json', Authorization: token?`Bearer ${token}`:undefined }, body: JSON.stringify(monthly) })
+        await fetch(`${API_URL}/schedules`, { method: 'PUT', headers: { 'Content-Type':'application/json', Authorization: token?`Bearer ${token}`:undefined }, body: JSON.stringify(monthly) })
       } catch {}
     }
     if (token) save()

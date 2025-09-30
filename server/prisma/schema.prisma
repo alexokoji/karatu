@@ -107,3 +107,9 @@ model ChatMessage {
   text      String
   date      DateTime @default(now())
 }
+
+model Schedule {
+  tutorId   String  @id
+  plans     Json
+  updatedAt DateTime @updatedAt
+}

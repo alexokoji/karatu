@@ -216,20 +216,46 @@ app.post('/transactions', auth(['student','admin']), (req, res) => {
 });
 
 // Tutor schedules (per user)
-app.get('/schedules', auth(['tutor','admin']), (req, res) => {
+app.get('/schedules', auth(['tutor','admin']), async (req, res) => {
+  const prisma = getPrisma();
+  try {
+    if (prisma) {
+      const sched = await prisma.schedule.findUnique({ where: { tutorId: req.user.id } });
+      return res.json(Array.isArray(sched?.plans) ? sched.plans : (sched?.plans || []));
+    }
+  } catch {}
   const all = read('schedules', {});
   const list = all[req.user.id] || [];
   res.json(list);
 });
-app.put('/schedules', auth(['tutor','admin']), (req, res) => {
+app.put('/schedules', auth(['tutor','admin']), async (req, res) => {
+  const prisma = getPrisma();
+  const plans = Array.isArray(req.body) ? req.body : [];
+  try {
+    if (prisma) {
+      const sched = await prisma.schedule.upsert({
+        where: { tutorId: req.user.id },
+        update: { plans },
+        create: { tutorId: req.user.id, plans }
+      });
+      return res.json(Array.isArray(sched?.plans) ? sched.plans : (sched?.plans || []));
+    }
+  } catch {}
   const all = read('schedules', {});
-  all[req.user.id] = Array.isArray(req.body) ? req.body : [];
+  all[req.user.id] = plans;
   write('schedules', all);
   res.json(all[req.user.id]);
 });
 
 // Public read-only schedules by tutorId for students to view on tutor profile
-app.get('/schedules/:tutorId', (req, res) => {
+app.get('/schedules/:tutorId', async (req, res) => {
+  const prisma = getPrisma();
+  try {
+    if (prisma) {
+      const sched = await prisma.schedule.findUnique({ where: { tutorId: req.params.tutorId } });
+      return res.json(Array.isArray(sched?.plans) ? sched.plans : (sched?.plans || []));
+    }
+  } catch {}
   const all = read('schedules', {});
   const list = all[req.params.tutorId] || [];
   res.json(list);
