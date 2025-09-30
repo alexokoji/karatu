@@ -18,8 +18,8 @@ export default function TutorProfile() {
   const [t, setTutor] = useState(null)
   const [avg, setAvg] = useState(0)
   const [hover, setHover] = useState(0)
-  // Monthly schedules should come from backend; hide if not available publicly
-  const monthly = []
+  // Monthly schedules loaded from backend by tutor id
+  const [monthly, setMonthly] = useState([])
   const rate = (() => { try { return Number(localStorage.getItem('tutorPrivateRate')) || 25 } catch { return 25 } })()
   const monthlyPrice = (sessionsPerWeek) => {
     // 4 weeks x sessions/week x 1h x rate
@@ -94,6 +94,19 @@ export default function TutorProfile() {
       } catch {}
     }
     loadTutor()
+    // Load monthly schedules for this tutor (public)
+    const loadSchedules = async () => {
+      try {
+        // need tutor id to fetch schedules; wait until tutor is loaded
+        if (!t) return
+        const res = await fetch(`${API_URL}/schedules/${t.id}`)
+        if (res.ok) {
+          const list = await res.json()
+          if (Array.isArray(list)) setMonthly(list)
+        }
+      } catch {}
+    }
+    loadSchedules()
     const loadRatings = async () => {
       try {
         if (!slug) return
@@ -108,7 +121,7 @@ export default function TutorProfile() {
       } catch {}
     }
     loadRatings()
-  }, [slug])
+  }, [slug, t])
   if (!t) return <div className="px-4 md:px-10 lg:px-20 py-10">Loading...</div>
   return (
     <div className="px-4 md:px-10 lg:px-20 py-10">

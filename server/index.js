@@ -228,6 +228,13 @@ app.put('/schedules', auth(['tutor','admin']), (req, res) => {
   res.json(all[req.user.id]);
 });
 
+// Public read-only schedules by tutorId for students to view on tutor profile
+app.get('/schedules/:tutorId', (req, res) => {
+  const all = read('schedules', {});
+  const list = all[req.params.tutorId] || [];
+  res.json(list);
+});
+
 // Ratings
 app.get('/ratings/:slug', async (req, res) => {
   const prisma = getPrisma();

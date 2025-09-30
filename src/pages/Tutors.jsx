@@ -7,6 +7,7 @@ export default function Tutors() {
   const { role, isAuthenticated } = useAuth()
   const rate = (() => { try { return Number(localStorage.getItem('tutorPrivateRate')) || 25 } catch { return 25 } })()
   const [tutors, setTutors] = useState([])
+  const [schedulesByTutorId, setSchedulesByTutorId] = useState({})
   useEffect(() => {
     const fetchTutors = async () => {
       try {
@@ -20,6 +21,24 @@ export default function Tutors() {
     fetchTutors()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+  // Load public schedules for each tutor (for student discovery)
+  useEffect(() => {
+    const loadAllSchedules = async () => {
+      try {
+        const entries = await Promise.all((tutors||[]).map(async (t) => {
+          try {
+            const res = await fetch(`${API_URL}/schedules/${t.id}`)
+            if (!res.ok) return [t.id, []]
+            const list = await res.json()
+            return [t.id, Array.isArray(list) ? list : []]
+          } catch { return [t.id, []] }
+        }))
+        const map = Object.fromEntries(entries)
+        setSchedulesByTutorId(map)
+      } catch {}
+    }
+    if ((tutors||[]).length) loadAllSchedules()
+  }, [tutors])
   const getAvgLocal = (slug) => { try { const raw = localStorage.getItem(`tutorRatings:${slug}`); const arr = raw ? JSON.parse(raw) : []; if (!arr.length) return 0; return Math.round((arr.reduce((a,b)=>a+b,0)/arr.length)*10)/10 } catch { return 0 } }
   const [remoteRatings, setRemoteRatings] = useState({})
   useEffect(() => {
@@ -88,6 +107,17 @@ export default function Tutors() {
                     <p className="text-lg font-bold">{t.name}</p>
                     <p className="text-sm text-primary-700">{t.role}</p>
                     <p className="text-xs text-gray-500">Rating: {(remoteRatings[t.slug] ?? getAvgLocal(t.slug))} ★</p>
+                    {/* Monthly schedule summary */}
+                    {(() => {
+                      const plans = schedulesByTutorId[t.id] || []
+                      if (!plans.length) return null
+                      const sessionsPerPlan = plans.map(p => (p.sessions||[]).length)
+                      const maxSessions = Math.max(0, ...sessionsPerPlan)
+                      const planLabel = plans.length === 1 ? '1 plan' : `${plans.length} plans`
+                      return (
+                        <p className="mt-1 text-xs text-gray-600">{planLabel} • up to {maxSessions} sessions/week</p>
+                      )
+                    })()}
                   </div>
                   <div className="flex items-center gap-2 mt-2">
                     <Link to="/courses" className="h-10 px-4 inline-flex items-center rounded-lg bg-primary-700 hover:bg-primary-800 text-white text-sm font-bold hover-pulse">View Courses</Link>
