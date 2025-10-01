@@ -20,15 +20,17 @@ const io = new Server(server, {
 });
 
 // CORS configuration for Render
-const allowedOrigins = (process.env.ALLOWED_ORIGIN || '*')
+const allowedOrigins = (process.env.ALLOWED_ORIGIN || 'https://karatu.onrender.com,http://localhost:3000,http://localhost:5173')
   .split(',')
   .map(s => s.trim());
 app.use(cors({
   origin: function(origin, callback) {
+    console.log('CORS request from origin:', origin);
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
+    console.log('CORS blocked origin:', origin, 'Allowed origins:', allowedOrigins);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
