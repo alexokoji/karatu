@@ -177,7 +177,15 @@ export default function VideoCall() {
       }
     }
     
-    if (sessionData && sessionData.status === 'accepted' && sessionData.paid && socket && isConnected) {
+    // Allow video for accepted and paid sessions, or if user is the tutor
+    const canJoinSession = sessionData && 
+      sessionData.status === 'accepted' && 
+      sessionData.paid && 
+      socket && 
+      isConnected &&
+      (user?.role === 'student' || (user?.role === 'tutor' && (sessionData.tutorId === user?.id || sessionData.tutorName === user?.name)))
+    
+    if (canJoinSession) {
       initializeVideo()
     }
     

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import TutorLayout from '../components/TutorLayout'
 import { useAuth } from '../context/AuthContext'
 import { API_URL } from '../config'
@@ -80,6 +81,13 @@ export default function TutorPrivate() {
                   <div className="mt-3 flex items-center gap-2">
                     <button onClick={()=> accept(s.id)} className="h-9 px-3 rounded-md border border-gray-200 hover:bg-gray-50 text-sm">Accept</button>
                     <button onClick={()=> decline(s.id)} className="h-9 px-3 rounded-md border border-gray-200 hover:bg-gray-50 text-sm">Decline</button>
+                  </div>
+                )}
+                {s.status==='accepted' && s.paid && (
+                  <div className="mt-3">
+                    <Link to={`/video/${s.id}`} className="inline-flex items-center justify-center h-9 px-4 rounded-md bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold">
+                      Join Session
+                    </Link>
                   </div>
                 )}
               </div>
