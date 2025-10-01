@@ -195,8 +195,17 @@ export default function VideoCall() {
         
         // Handle remote stream
         pc.ontrack = (event) => {
-          console.log('Received remote stream')
+          console.log('Received remote stream:', event.streams[0])
           setRemoteStream(event.streams[0])
+        }
+        
+        // Add connection state monitoring
+        pc.onconnectionstatechange = () => {
+          console.log('Connection state changed:', pc.connectionState)
+        }
+        
+        pc.oniceconnectionstatechange = () => {
+          console.log('ICE connection state changed:', pc.iceConnectionState)
         }
         
         // Handle ICE candidates
@@ -295,9 +304,14 @@ export default function VideoCall() {
     socket.on('offer', handleOffer)
     socket.on('answer', handleAnswer)
     socket.on('ice-candidate', handleIceCandidate)
-    socket.on('user-joined', () => {
+    socket.on('user-joined', (socketId) => {
+      console.log('User joined session:', socketId)
+      console.log('Current user role:', user?.role)
       // Another peer joined this session; initiate the offer from this side
-      createAndSendOffer()
+      setTimeout(() => {
+        console.log('Attempting to create and send offer...')
+        createAndSendOffer()
+      }, 1000) // Small delay to ensure both sides are ready
     })
 
     return () => {
@@ -507,6 +521,32 @@ export default function VideoCall() {
                 disabled={videoInitialized}
               >
                 Start Video
+              </button>
+            )}
+            {localStream && !remoteStream && (
+              <button 
+                onClick={() => {
+                  console.log('Manual connection attempt triggered')
+                  if (socket && peerConnection) {
+                    socket.emit('join-session', currentSessionId)
+                    setTimeout(() => {
+                      const createAndSendOffer = async () => {
+                        try {
+                          const offer = await peerConnection.createOffer()
+                          await peerConnection.setLocalDescription(offer)
+                          socket.emit('offer', { offer, sessionId: currentSessionId })
+                          console.log('Manual offer sent')
+                        } catch (error) {
+                          console.error('Error creating/sending manual offer:', error)
+                        }
+                      }
+                      createAndSendOffer()
+                    }, 1000)
+                  }
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                Connect
               </button>
             )}
             <button 
