@@ -50,8 +50,8 @@ export const router = createBrowserRouter([
       { path: 'tutor', element: <AuthTutor><TutorDashboard /></AuthTutor> },
       { path: 'course', element: <AuthStudent><CoursePage /></AuthStudent> },
       { path: 'student/courses/:slug', element: <AuthStudent><EnrolledCourse /></AuthStudent> },
-      { path: 'video', element: <AuthStudent><VideoCall /></AuthStudent> },
-      { path: 'video/:sessionId', element: <AuthStudent><VideoCall /></AuthStudent> },
+      { path: 'video', element: <AuthStudentOrTutor><VideoCall /></AuthStudentOrTutor> },
+      { path: 'video/:sessionId', element: <AuthStudentOrTutor><VideoCall /></AuthStudentOrTutor> },
       { path: 'lessons/:id', element: <AuthStudent><Lesson /></AuthStudent> },
       { path: 'profile', element: <AuthStudent><Profile /></AuthStudent> },
       { path: 'tutor/schedule', element: <AuthTutor><TutorSchedule /></AuthTutor> },
@@ -89,5 +89,11 @@ function AuthTutor({ children }) {
 function AuthAdmin({ children }) {
   const { isAuthenticated, role } = useAuth();
   if (!isAuthenticated || role !== 'admin') return <div className="px-6 py-10">Please log in as an admin to view this page.</div>;
+  return children;
+}
+
+function AuthStudentOrTutor({ children }) {
+  const { isAuthenticated, role } = useAuth();
+  if (!isAuthenticated || (role !== 'student' && role !== 'tutor')) return <div className="px-6 py-10">Please log in as a student or tutor to view this page.</div>;
   return children;
 }
