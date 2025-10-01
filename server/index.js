@@ -321,10 +321,21 @@ app.get('/private-sessions/:id', auth(['student','tutor','admin']), (req, res) =
   res.json(session);
 });
 
-app.put('/private-sessions/:id', auth(['tutor','admin']), (req, res) => {
+app.put('/private-sessions/:id', auth(['student','tutor','admin']), (req, res) => {
   const list = read('privateSessions', []);
   const idx = list.findIndex(s => s.id === req.params.id);
   if (idx < 0) return res.status(404).json({ error: 'Not found' });
+  
+  const session = list[idx];
+  
+  // Check if user has access to this session
+  if (req.user.role === 'student' && session.studentId !== req.user.id && session.studentName !== req.user.name) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  if (req.user.role === 'tutor' && session.tutorId !== req.user.id && session.tutorName !== req.user.name) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  
   list[idx] = { ...list[idx], ...req.body };
   write('privateSessions', list);
   res.json(list[idx]);
