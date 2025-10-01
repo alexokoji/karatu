@@ -524,24 +524,44 @@ export default function VideoCall() {
           <div className="flex-1 overflow-y-auto pr-0 md:pr-6">
             <div className="mb-6">
               <div className="relative aspect-video w-full overflow-hidden rounded-xl shadow-lg bg-gray-900">
-                {/* Remote video (tutor) */}
-                {remoteStream ? (
-                  <video
-                    ref={remoteVideoRef}
-                    className="absolute inset-0 h-full w-full object-cover"
-                    autoPlay
-                    playsInline
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                    <div className="text-center text-white">
-                      <div className="text-6xl mb-4">👨‍🏫</div>
-                      <p className="text-lg">Waiting for tutor to join...</p>
+                {/* Main video area - shows the other participant */}
+                {user?.role === 'student' ? (
+                  // Student view: remote video is tutor
+                  remoteStream ? (
+                    <video
+                      ref={remoteVideoRef}
+                      className="absolute inset-0 h-full w-full object-cover"
+                      autoPlay
+                      playsInline
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                      <div className="text-center text-white">
+                        <div className="text-6xl mb-4">👨‍🏫</div>
+                        <p className="text-lg">Waiting for tutor to join...</p>
+                      </div>
                     </div>
-                  </div>
+                  )
+                ) : (
+                  // Tutor view: remote video is student
+                  remoteStream ? (
+                    <video
+                      ref={remoteVideoRef}
+                      className="absolute inset-0 h-full w-full object-cover"
+                      autoPlay
+                      playsInline
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                      <div className="text-center text-white">
+                        <div className="text-6xl mb-4">👨‍🎓</div>
+                        <p className="text-lg">Waiting for student to join...</p>
+                      </div>
+                    </div>
+                  )
                 )}
                 
-                {/* Local video (student) */}
+                {/* Picture-in-picture - shows current user */}
                 <div className="absolute bottom-4 right-4 h-24 w-40 overflow-hidden rounded-lg border-2 border-white shadow-md">
                   {localStream && !isVideoOff ? (
                     <video
