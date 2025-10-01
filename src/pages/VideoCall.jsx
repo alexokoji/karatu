@@ -33,11 +33,35 @@ export default function VideoCall() {
   const [mediaPermission, setMediaPermission] = useState('prompt') // 'prompt', 'granted', 'denied'
   const [socket, setSocket] = useState(null)
   const [isConnected, setIsConnected] = useState(false)
+  const [videoInitialized, setVideoInitialized] = useState(false)
   const localVideoRef = useRef(null)
   const remoteVideoRef = useRef(null)
 
   // Use sessionId from URL params or fallback to default
   const currentSessionId = sessionId || 'session-123'
+
+  // Reset video state when sessionId changes
+  const resetVideoState = () => {
+    console.log('Resetting video state for new session')
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop())
+    }
+    if (peerConnection) {
+      peerConnection.close()
+    }
+    setLocalStream(null)
+    setRemoteStream(null)
+    setPeerConnection(null)
+    setVideoInitialized(false)
+    setMediaPermission('prompt')
+    setIsMuted(false)
+    setIsVideoOff(false)
+  }
+
+  // Reset when sessionId changes
+  useEffect(() => {
+    resetVideoState()
+  }, [currentSessionId])
 
   // Load session data and messages from backend
   useEffect(() => {
@@ -105,7 +129,14 @@ export default function VideoCall() {
 
   // Initialize Socket.IO connection
   useEffect(() => {
-    const newSocket = io(WS_URL)
+    const newSocket = io(WS_URL, {
+      transports: ['websocket', 'polling'],
+      timeout: 20000,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+      maxReconnectionAttempts: 5
+    })
     setSocket(newSocket)
     
     newSocket.on('connect', () => {
@@ -113,8 +144,22 @@ export default function VideoCall() {
       setIsConnected(true)
     })
     
-    newSocket.on('disconnect', () => {
-      console.log('Disconnected from signaling server')
+    newSocket.on('disconnect', (reason) => {
+      console.log('Disconnected from signaling server:', reason)
+      setIsConnected(false)
+    })
+    
+    newSocket.on('reconnect', (attemptNumber) => {
+      console.log('Reconnected to signaling server after', attemptNumber, 'attempts')
+      setIsConnected(true)
+    })
+    
+    newSocket.on('reconnect_error', (error) => {
+      console.log('Reconnection error:', error)
+    })
+    
+    newSocket.on('reconnect_failed', () => {
+      console.log('Failed to reconnect to signaling server')
       setIsConnected(false)
     })
     
@@ -185,8 +230,10 @@ export default function VideoCall() {
       isConnected &&
       (user?.role === 'student' || (user?.role === 'tutor' && (sessionData.tutorId === user?.id || sessionData.tutorName === user?.name)))
     
-    if (canJoinSession) {
+    if (canJoinSession && !videoInitialized) {
+      console.log('Initializing video for session:', currentSessionId)
       initializeVideo()
+      setVideoInitialized(true)
     }
     
     // Cleanup on unmount
@@ -434,9 +481,23 @@ export default function VideoCall() {
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm text-gray-600">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span>Live</span>
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
             </div>
+            {!videoInitialized && sessionData && (
+              <button 
+                onClick={() => {
+                  console.log('Manual video initialization triggered')
+                  resetVideoState()
+                  setTimeout(() => {
+                    setVideoInitialized(false)
+                  }, 100)
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Start Video
+              </button>
+            )}
             <button 
               onClick={() => navigate('/student')}
               className="px-4 py-2 text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50"
