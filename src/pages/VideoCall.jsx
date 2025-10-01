@@ -230,7 +230,7 @@ export default function VideoCall() {
       isConnected &&
       (user?.role === 'student' || (user?.role === 'tutor' && (sessionData.tutorId === user?.id || sessionData.tutorName === user?.name)))
     
-    if (canJoinSession && !videoInitialized) {
+    if (canJoinSession && !videoInitialized && !localStream) {
       console.log('Initializing video for session:', currentSessionId)
       initializeVideo()
       setVideoInitialized(true)
@@ -484,16 +484,27 @@ export default function VideoCall() {
               <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
               <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
             </div>
-            {!videoInitialized && sessionData && (
+            {sessionData && !localStream && mediaPermission !== 'denied' && (
               <button 
-                onClick={() => {
+                onClick={async () => {
                   console.log('Manual video initialization triggered')
-                  resetVideoState()
-                  setTimeout(() => {
+                  try {
+                    setVideoInitialized(true) // Prevent multiple clicks
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                      video: true,
+                      audio: true
+                    })
+                    setLocalStream(stream)
+                    setMediaPermission('granted')
+                    console.log('Manual video initialization successful')
+                  } catch (error) {
+                    console.error('Manual video initialization failed:', error)
                     setVideoInitialized(false)
-                  }, 100)
+                    setMediaPermission('denied')
+                  }
                 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                disabled={videoInitialized}
               >
                 Start Video
               </button>
