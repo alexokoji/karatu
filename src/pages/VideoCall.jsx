@@ -258,20 +258,31 @@ export default function VideoCall() {
 
   // Handle WebRTC signaling
   useEffect(() => {
-    if (!socket || !peerConnection) return
+    if (!socket) return
 
     const createAndSendOffer = async () => {
+      if (!peerConnection) {
+        console.log('No peer connection available for offer')
+        return
+      }
       try {
+        console.log('Creating and sending offer...')
         const offer = await peerConnection.createOffer()
         await peerConnection.setLocalDescription(offer)
         socket.emit('offer', { offer, sessionId: currentSessionId })
+        console.log('Offer sent successfully')
       } catch (error) {
         console.error('Error creating/sending offer:', error)
       }
     }
 
     const handleOffer = async (data) => {
+      if (!peerConnection) {
+        console.log('No peer connection available for offer handling')
+        return
+      }
       try {
+        console.log('Received offer, creating answer...')
         await peerConnection.setRemoteDescription(data.offer)
         const answer = await peerConnection.createAnswer()
         await peerConnection.setLocalDescription(answer)
@@ -280,22 +291,35 @@ export default function VideoCall() {
           answer: answer,
           sessionId: currentSessionId
         })
+        console.log('Answer sent successfully')
       } catch (error) {
         console.error('Error handling offer:', error)
       }
     }
 
     const handleAnswer = async (data) => {
+      if (!peerConnection) {
+        console.log('No peer connection available for answer handling')
+        return
+      }
       try {
+        console.log('Received answer, setting remote description...')
         await peerConnection.setRemoteDescription(data.answer)
+        console.log('Answer processed successfully')
       } catch (error) {
         console.error('Error handling answer:', error)
       }
     }
 
     const handleIceCandidate = async (data) => {
+      if (!peerConnection) {
+        console.log('No peer connection available for ICE candidate')
+        return
+      }
       try {
+        console.log('Received ICE candidate, adding...')
         await peerConnection.addIceCandidate(data.candidate)
+        console.log('ICE candidate added successfully')
       } catch (error) {
         console.error('Error handling ICE candidate:', error)
       }
@@ -307,6 +331,7 @@ export default function VideoCall() {
     socket.on('user-joined', (socketId) => {
       console.log('User joined session:', socketId)
       console.log('Current user role:', user?.role)
+      console.log('Peer connection exists:', !!peerConnection)
       // Another peer joined this session; initiate the offer from this side
       setTimeout(() => {
         console.log('Attempting to create and send offer...')
@@ -525,23 +550,31 @@ export default function VideoCall() {
             )}
             {localStream && !remoteStream && (
               <button 
-                onClick={() => {
+                onClick={async () => {
                   console.log('Manual connection attempt triggered')
-                  if (socket && peerConnection) {
+                  if (socket) {
+                    // Re-join the session to trigger user-joined event
                     socket.emit('join-session', currentSessionId)
-                    setTimeout(() => {
-                      const createAndSendOffer = async () => {
+                    console.log('Re-joined session:', currentSessionId)
+                    
+                    // Wait a bit then try to send offer
+                    setTimeout(async () => {
+                      if (peerConnection) {
                         try {
+                          console.log('Creating manual offer...')
                           const offer = await peerConnection.createOffer()
                           await peerConnection.setLocalDescription(offer)
                           socket.emit('offer', { offer, sessionId: currentSessionId })
-                          console.log('Manual offer sent')
+                          console.log('Manual offer sent successfully')
                         } catch (error) {
                           console.error('Error creating/sending manual offer:', error)
                         }
+                      } else {
+                        console.log('No peer connection available for manual offer')
                       }
-                      createAndSendOffer()
-                    }, 1000)
+                    }, 2000)
+                  } else {
+                    console.log('No socket available for manual connection')
                   }
                 }}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
