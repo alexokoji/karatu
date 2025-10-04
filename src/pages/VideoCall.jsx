@@ -199,22 +199,43 @@ export default function VideoCall() {
           setRemoteStream(event.streams[0])
         }
         
-        // Add connection state monitoring
+        // Add comprehensive connection state monitoring
         pc.onconnectionstatechange = () => {
-          console.log('Connection state changed:', pc.connectionState)
+          console.log('🔗 Connection state changed:', pc.connectionState)
+          if (pc.connectionState === 'connected') {
+            console.log('✅ WebRTC connection established!')
+          } else if (pc.connectionState === 'failed') {
+            console.log('❌ WebRTC connection failed!')
+          }
         }
         
         pc.oniceconnectionstatechange = () => {
-          console.log('ICE connection state changed:', pc.iceConnectionState)
+          console.log('🧊 ICE connection state changed:', pc.iceConnectionState)
+          if (pc.iceConnectionState === 'connected') {
+            console.log('✅ ICE connection established!')
+          } else if (pc.iceConnectionState === 'failed') {
+            console.log('❌ ICE connection failed!')
+          }
+        }
+        
+        pc.onicegatheringstatechange = () => {
+          console.log('🔍 ICE gathering state:', pc.iceGatheringState)
+        }
+        
+        pc.onsignalingstatechange = () => {
+          console.log('📡 Signaling state changed:', pc.signalingState)
         }
         
         // Handle ICE candidates
         pc.onicecandidate = (event) => {
           if (event.candidate && socket) {
+            console.log('🧊 Sending ICE candidate:', event.candidate)
             socket.emit('ice-candidate', {
               candidate: event.candidate,
               sessionId: currentSessionId
             })
+          } else if (event.candidate === null) {
+            console.log('🧊 ICE gathering complete')
           }
         }
         
@@ -222,6 +243,7 @@ export default function VideoCall() {
         
         // Join the session room
         if (socket) {
+          console.log('🚪 Joining session room:', currentSessionId)
           socket.emit('join-session', currentSessionId)
         }
         
@@ -262,66 +284,74 @@ export default function VideoCall() {
 
     const createAndSendOffer = async () => {
       if (!peerConnection) {
-        console.log('No peer connection available for offer')
+        console.log('❌ No peer connection available for offer')
         return
       }
       try {
-        console.log('Creating and sending offer...')
+        console.log('📤 Creating and sending offer...')
         const offer = await peerConnection.createOffer()
+        console.log('📤 Offer created:', offer.type)
         await peerConnection.setLocalDescription(offer)
+        console.log('📤 Local description set')
         socket.emit('offer', { offer, sessionId: currentSessionId })
-        console.log('Offer sent successfully')
+        console.log('✅ Offer sent successfully to session:', currentSessionId)
       } catch (error) {
-        console.error('Error creating/sending offer:', error)
+        console.error('❌ Error creating/sending offer:', error)
       }
     }
 
     const handleOffer = async (data) => {
       if (!peerConnection) {
-        console.log('No peer connection available for offer handling')
+        console.log('❌ No peer connection available for offer handling')
         return
       }
       try {
-        console.log('Received offer, creating answer...')
+        console.log('📥 Received offer, creating answer...')
+        console.log('📥 Offer type:', data.offer.type)
         await peerConnection.setRemoteDescription(data.offer)
+        console.log('📥 Remote description set')
         const answer = await peerConnection.createAnswer()
+        console.log('📥 Answer created:', answer.type)
         await peerConnection.setLocalDescription(answer)
+        console.log('📥 Local description set')
         
         socket.emit('answer', {
           answer: answer,
           sessionId: currentSessionId
         })
-        console.log('Answer sent successfully')
+        console.log('✅ Answer sent successfully to session:', currentSessionId)
       } catch (error) {
-        console.error('Error handling offer:', error)
+        console.error('❌ Error handling offer:', error)
       }
     }
 
     const handleAnswer = async (data) => {
       if (!peerConnection) {
-        console.log('No peer connection available for answer handling')
+        console.log('❌ No peer connection available for answer handling')
         return
       }
       try {
-        console.log('Received answer, setting remote description...')
+        console.log('📥 Received answer, setting remote description...')
+        console.log('📥 Answer type:', data.answer.type)
         await peerConnection.setRemoteDescription(data.answer)
-        console.log('Answer processed successfully')
+        console.log('✅ Answer processed successfully - connection should be established!')
       } catch (error) {
-        console.error('Error handling answer:', error)
+        console.error('❌ Error handling answer:', error)
       }
     }
 
     const handleIceCandidate = async (data) => {
       if (!peerConnection) {
-        console.log('No peer connection available for ICE candidate')
+        console.log('❌ No peer connection available for ICE candidate')
         return
       }
       try {
-        console.log('Received ICE candidate, adding...')
+        console.log('🧊 Received ICE candidate, adding...')
+        console.log('🧊 ICE candidate:', data.candidate.candidate)
         await peerConnection.addIceCandidate(data.candidate)
-        console.log('ICE candidate added successfully')
+        console.log('✅ ICE candidate added successfully')
       } catch (error) {
-        console.error('Error handling ICE candidate:', error)
+        console.error('❌ Error handling ICE candidate:', error)
       }
     }
 
@@ -329,12 +359,13 @@ export default function VideoCall() {
     socket.on('answer', handleAnswer)
     socket.on('ice-candidate', handleIceCandidate)
     socket.on('user-joined', (socketId) => {
-      console.log('User joined session:', socketId)
-      console.log('Current user role:', user?.role)
-      console.log('Peer connection exists:', !!peerConnection)
+      console.log('👥 User joined session:', socketId)
+      console.log('👤 Current user role:', user?.role)
+      console.log('🔗 Peer connection exists:', !!peerConnection)
+      console.log('📡 Socket connected:', socket.connected)
       // Another peer joined this session; initiate the offer from this side
       setTimeout(() => {
-        console.log('Attempting to create and send offer...')
+        console.log('🚀 Attempting to create and send offer...')
         createAndSendOffer()
       }, 1000) // Small delay to ensure both sides are ready
     })
@@ -523,6 +554,13 @@ export default function VideoCall() {
               <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
               <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
             </div>
+            {peerConnection && (
+              <div className="text-xs text-gray-500">
+                <div>PC: {peerConnection.connectionState || 'unknown'}</div>
+                <div>ICE: {peerConnection.iceConnectionState || 'unknown'}</div>
+                <div>Signaling: {peerConnection.signalingState || 'unknown'}</div>
+              </div>
+            )}
             {sessionData && !localStream && mediaPermission !== 'denied' && (
               <button 
                 onClick={async () => {
