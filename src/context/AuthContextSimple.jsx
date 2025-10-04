@@ -105,7 +105,8 @@ export function AuthProvider({ children }) {
     loginTutor: (u) => { setRole('tutor'); if (u) setUser(u); },
     loginAdmin: (u) => { setRole('admin'); if (u) setUser(u); },
     logout: () => { setRole('guest'); setUser(null); setToken(''); },
-  }), [role, user, token, isLoading]);
+    }
+  }, [role, user, token, isLoading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
