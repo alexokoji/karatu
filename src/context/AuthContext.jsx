@@ -9,15 +9,27 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('authToken') || '');
   const [isLoading, setIsLoading] = useState(true);
   
-  // Fallback timeout to ensure loading never gets stuck
+  // Aggressive fallback timeout to ensure loading never gets stuck
   useEffect(() => {
     const fallbackTimeout = setTimeout(() => {
-      console.log('🔐 Fallback timeout - forcing loading to false')
+      console.log('🔐 EMERGENCY FALLBACK - forcing loading to false')
       setIsLoading(false)
-    }, 10000) // 10 second absolute timeout
+    }, 3000) // 3 second absolute timeout
     
     return () => clearTimeout(fallbackTimeout)
   }, [])
+  
+  // Additional emergency fallback
+  useEffect(() => {
+    const emergencyTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.log('🚨 EMERGENCY: Loading state stuck, forcing false')
+        setIsLoading(false)
+      }
+    }, 5000) // 5 second emergency timeout
+    
+    return () => clearTimeout(emergencyTimeout)
+  }, [isLoading])
   
   useEffect(() => { try { if (user) localStorage.setItem('authUser', JSON.stringify(user)); else localStorage.removeItem('authUser') } catch {} }, [user])
   useEffect(() => { if (role) localStorage.setItem('authRole', role) }, [role])
@@ -26,49 +38,63 @@ export function AuthProvider({ children }) {
   // hydrate from backend if token exists
   useEffect(() => {
     const hydrate = async () => {
+      console.log('🔐 Starting hydration check...')
+      console.log('🔐 Token exists:', !!token)
+      console.log('🔐 API_URL:', API_URL)
+      
       if (!token) {
-        console.log('🔐 No token found, setting loading to false')
+        console.log('🔐 No token found, setting loading to false immediately')
         setIsLoading(false)
         return
       }
       
-      // Add timeout to prevent infinite loading
-      const timeoutId = setTimeout(() => {
-        console.log('🔐 Hydration timeout, setting loading to false')
+      // Immediate timeout as backup
+      const immediateTimeout = setTimeout(() => {
+        console.log('🔐 Immediate timeout - forcing loading to false')
         setIsLoading(false)
-      }, 5000) // 5 second timeout
+      }, 2000) // 2 second immediate timeout
       
       try {
-        console.log('🔐 Hydrating auth state with token:', token)
-        console.log('🔐 API_URL for hydration:', API_URL)
+        console.log('🔐 Attempting to hydrate with token...')
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
+        
         const res = await fetch(`${API_URL}/auth/me`, { 
           headers: { Authorization: `Bearer ${token}` },
-          signal: AbortSignal.timeout(10000) // 10 second fetch timeout
+          signal: controller.signal
         })
+        
+        clearTimeout(timeoutId)
         console.log('🔐 Hydration response status:', res.status)
+        
         if (!res.ok) {
           console.error('🔐 Hydration failed with status:', res.status)
           throw new Error('bad')
         }
+        
         const data = await res.json()
         console.log('🔐 Auth hydration response:', data)
+        
         if (data?.user) {
           setRole(data.user.role)
           setUser({ id: data.user.id, name: data.user.name })
-          console.log('🔐 Auth state hydrated:', { role: data.user.role, user: data.user })
+          console.log('🔐 Auth state hydrated successfully')
         }
       } catch (error) {
         console.error('🔐 Auth hydration failed:', error)
-        // Only clear auth if it's a real error, not a network timeout
-        if (error.name !== 'AbortError') {
-          setRole('guest'); setUser(null); setToken('')
-        }
+        // Clear auth on any error
+        setRole('guest')
+        setUser(null)
+        setToken('')
       } finally {
-        clearTimeout(timeoutId)
+        clearTimeout(immediateTimeout)
+        console.log('🔐 Setting loading to false')
         setIsLoading(false)
       }
     }
-    hydrate()
+    
+    // Add a small delay to ensure state is ready
+    setTimeout(hydrate, 100)
   }, [])
 
   const value = useMemo(() => ({

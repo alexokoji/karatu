@@ -16,13 +16,16 @@ export default function App() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-700 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
           <p className="text-xs text-gray-400 mt-2">Checking authentication...</p>
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-4 p-2 bg-gray-100 rounded text-xs text-gray-600">
-              <div>Role: {role}</div>
-              <div>Authenticated: {isAuthenticated ? 'Yes' : 'No'}</div>
-              <div>Loading: {isLoading ? 'Yes' : 'No'}</div>
+          <div className="mt-4 p-4 bg-gray-100 rounded text-xs text-gray-600 max-w-md mx-auto">
+            <div className="font-semibold mb-2">Debug Info:</div>
+            <div>Role: {role}</div>
+            <div>Authenticated: {isAuthenticated ? 'Yes' : 'No'}</div>
+            <div>Loading: {isLoading ? 'Yes' : 'No'}</div>
+            <div>User: {user ? user.name : 'None'}</div>
+            <div className="mt-2 text-red-600">
+              If this screen persists for more than 5 seconds, there's a bug.
             </div>
-          )}
+          </div>
         </div>
       </div>
     );
