@@ -15,12 +15,28 @@ export default function Register() {
     e.preventDefault()
     setError(''); setLoading(true)
     try {
+      console.log('📝 Registration form submitted:', { name, email, role })
       const res = await register({ name, email, password, role })
-      if (res?.user?.role === 'student') navigate('/student')
-      else if (res?.user?.role === 'tutor') navigate('/tutor')
-      else if (res?.user?.role === 'admin') navigate('/admin')
-      else navigate('/')
-    } catch (e) { setError('Registration failed') } finally { setLoading(false) }
+      console.log('📝 Registration response:', res)
+      if (res?.user?.role === 'student') {
+        console.log('📝 Navigating to student dashboard')
+        navigate('/student')
+      } else if (res?.user?.role === 'tutor') {
+        console.log('📝 Navigating to tutor dashboard')
+        navigate('/tutor')
+      } else if (res?.user?.role === 'admin') {
+        console.log('📝 Navigating to admin dashboard')
+        navigate('/admin')
+      } else {
+        console.log('📝 Navigating to home')
+        navigate('/')
+      }
+    } catch (e) { 
+      console.error('📝 Registration error:', e)
+      setError('Registration failed') 
+    } finally { 
+      setLoading(false) 
+    }
   }
   return (
     <div className="px-4 md:px-10 lg:px-20 py-10 max-w-lg mx-auto">

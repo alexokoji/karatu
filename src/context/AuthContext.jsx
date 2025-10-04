@@ -17,22 +17,28 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const hydrate = async () => {
       if (!token) {
+        console.log('🔐 No token found, setting loading to false')
         setIsLoading(false)
         return
       }
       try {
-        console.log('Hydrating auth state with token:', token)
+        console.log('🔐 Hydrating auth state with token:', token)
+        console.log('🔐 API_URL for hydration:', API_URL)
         const res = await fetch(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
-        if (!res.ok) throw new Error('bad')
+        console.log('🔐 Hydration response status:', res.status)
+        if (!res.ok) {
+          console.error('🔐 Hydration failed with status:', res.status)
+          throw new Error('bad')
+        }
         const data = await res.json()
-        console.log('Auth hydration response:', data)
+        console.log('🔐 Auth hydration response:', data)
         if (data?.user) {
           setRole(data.user.role)
           setUser({ id: data.user.id, name: data.user.name })
-          console.log('Auth state hydrated:', { role: data.user.role, user: data.user })
+          console.log('🔐 Auth state hydrated:', { role: data.user.role, user: data.user })
         }
       } catch (error) {
-        console.error('Auth hydration failed:', error)
+        console.error('🔐 Auth hydration failed:', error)
         setRole('guest'); setUser(null); setToken('')
       } finally {
         setIsLoading(false)
@@ -49,34 +55,64 @@ export function AuthProvider({ children }) {
     isAuthenticated: role !== 'guest',
     setUser,
     async register({ name, email, password, role }) {
-      const res = await fetch(`${API_URL}/auth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password, role }) })
-      if (!res.ok) throw new Error('Registration failed')
-      const data = await res.json()
-      setToken(data.token); setRole(data.user.role); setUser({ id: data.user.id, name: data.user.name, email: data.user.email })
-      return data
+      console.log('🔐 Attempting registration:', { name, email, role })
+      console.log('🔐 API_URL:', API_URL)
+      try {
+        const res = await fetch(`${API_URL}/auth/register`, { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ name, email, password, role }) 
+        })
+        console.log('🔐 Registration response status:', res.status)
+        if (!res.ok) {
+          const errorText = await res.text()
+          console.error('🔐 Registration failed:', res.status, errorText)
+          throw new Error('Registration failed')
+        }
+        const data = await res.json()
+        console.log('🔐 Registration successful:', data)
+        setToken(data.token); setRole(data.user.role); setUser({ id: data.user.id, name: data.user.name, email: data.user.email })
+        return data
+      } catch (error) {
+        console.error('🔐 Registration error:', error)
+        throw error
+      }
     },
     async login({ email, password }) {
-      const res = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) })
-      if (!res.ok) {
-        console.error('Login failed with status:', res.status)
-        throw new Error('Login failed')
+      console.log('🔐 Attempting login:', { email })
+      console.log('🔐 API_URL:', API_URL)
+      try {
+        const res = await fetch(`${API_URL}/auth/login`, { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ email, password }) 
+        })
+        console.log('🔐 Login response status:', res.status)
+        if (!res.ok) {
+          const errorText = await res.text()
+          console.error('🔐 Login failed:', res.status, errorText)
+          throw new Error('Login failed')
+        }
+        const data = await res.json()
+        console.log('🔐 Login successful:', data)
+        
+        // Update all state synchronously
+        setToken(data.token)
+        setRole(data.user.role)
+        setUser({ id: data.user.id, name: data.user.name, email: data.user.email })
+        setIsLoading(false)
+        
+        console.log('🔐 Auth state updated:', {
+          token: data.token,
+          role: data.user.role,
+          user: { id: data.user.id, name: data.user.name, email: data.user.email }
+        })
+        
+        return data
+      } catch (error) {
+        console.error('🔐 Login error:', error)
+        throw error
       }
-      const data = await res.json()
-      console.log('Login response:', data)
-      
-      // Update all state synchronously
-      setToken(data.token)
-      setRole(data.user.role)
-      setUser({ id: data.user.id, name: data.user.name, email: data.user.email })
-      setIsLoading(false)
-      
-      console.log('Auth state updated:', {
-        token: data.token,
-        role: data.user.role,
-        user: { id: data.user.id, name: data.user.name, email: data.user.email }
-      })
-      
-      return data
     },
     loginStudent: (u) => { setRole('student'); if (u) setUser(u); },
     loginTutor: (u) => { setRole('tutor'); if (u) setUser(u); },

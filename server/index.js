@@ -20,7 +20,7 @@ const io = new Server(server, {
 });
 
 // CORS configuration for Render
-const allowedOrigins = (process.env.ALLOWED_ORIGIN || 'https://karatu.onrender.com,http://localhost:3000,http://localhost:5173')
+const allowedOrigins = (process.env.ALLOWED_ORIGIN || 'https://karatu.onrender.com,http://localhost:3000,http://localhost:5173,http://localhost:5174')
   .split(',')
   .map(s => s.trim());
 app.use(cors({
@@ -389,32 +389,46 @@ app.post('/quizzes', auth(['tutor','admin']), (req, res) => {
   res.json(q);
 });
 
-// WebSocket signaling for video calls
+// WebSocket signaling for video calls - Simplified like Zoom
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+  console.log('🔗 User connected:', socket.id);
   
   socket.on('join-session', (sessionId) => {
+    console.log(`🚪 User ${socket.id} joining session: ${sessionId}`);
     socket.join(sessionId);
-    console.log(`User ${socket.id} joined session ${sessionId}`);
     
     // Notify other users in the session
     socket.to(sessionId).emit('user-joined', socket.id);
+    
+    // Send current participants to the new user
+    const room = io.sockets.adapter.rooms.get(sessionId);
+    if (room) {
+      const participants = Array.from(room).filter(id => id !== socket.id);
+      socket.emit('participants', participants);
+    }
   });
   
   socket.on('offer', (data) => {
+    console.log(`📤 Offer from ${socket.id} to session ${data.sessionId}`);
     socket.to(data.sessionId).emit('offer', data);
   });
   
   socket.on('answer', (data) => {
+    console.log(`📥 Answer from ${socket.id} to session ${data.sessionId}`);
     socket.to(data.sessionId).emit('answer', data);
   });
   
   socket.on('ice-candidate', (data) => {
+    console.log(`🧊 ICE candidate from ${socket.id} to session ${data.sessionId}`);
     socket.to(data.sessionId).emit('ice-candidate', data);
   });
   
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+    console.log('👋 User disconnected:', socket.id);
+    // Notify all rooms this user was in
+    socket.rooms.forEach(room => {
+      socket.to(room).emit('user-left', socket.id);
+    });
   });
 });
 

@@ -10,7 +10,7 @@ import TutorDashboard from './pages/TutorDashboard';
 import CoursePage from './pages/CoursePage';
 import CourseDetails from './pages/CourseDetails';
 import NotFound from './pages/NotFound';
-import VideoCall from './pages/VideoCall';
+import VideoCall from './pages/VideoCallSimple';
 import QuizAttempt from './pages/QuizAttempt';
 import Resources from './pages/Resources';
 import Lesson from './pages/Lesson';

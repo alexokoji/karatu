@@ -5,5 +5,12 @@
     "email": "alex@example.com",
     "passwordHash": "$2b$10$RUl3zi5rLR30hOh1/omIH.GGsZdHkQjdznLhvA0yRXbIr/t6v85UG",
     "role": "student"
+  },
+  {
+    "id": "4df94861-46ed-4387-b674-062ed4788a78",
+    "name": "Test User",
+    "email": "test@example.com",
+    "passwordHash": "$2b$10$KlAKwKE4Z1jDgaSfX9rV0eVuUmZM2WZnxKdnpfzq2R3RhYHjvlBDq",
+    "role": "student"
   }
 ]
