@@ -9,6 +9,16 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('authToken') || '');
   const [isLoading, setIsLoading] = useState(true);
   
+  // Fallback timeout to ensure loading never gets stuck
+  useEffect(() => {
+    const fallbackTimeout = setTimeout(() => {
+      console.log('🔐 Fallback timeout - forcing loading to false')
+      setIsLoading(false)
+    }, 10000) // 10 second absolute timeout
+    
+    return () => clearTimeout(fallbackTimeout)
+  }, [])
+  
   useEffect(() => { try { if (user) localStorage.setItem('authUser', JSON.stringify(user)); else localStorage.removeItem('authUser') } catch {} }, [user])
   useEffect(() => { if (role) localStorage.setItem('authRole', role) }, [role])
   useEffect(() => { if (token) localStorage.setItem('authToken', token); else localStorage.removeItem('authToken') }, [token])
@@ -21,10 +31,20 @@ export function AuthProvider({ children }) {
         setIsLoading(false)
         return
       }
+      
+      // Add timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        console.log('🔐 Hydration timeout, setting loading to false')
+        setIsLoading(false)
+      }, 5000) // 5 second timeout
+      
       try {
         console.log('🔐 Hydrating auth state with token:', token)
         console.log('🔐 API_URL for hydration:', API_URL)
-        const res = await fetch(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+        const res = await fetch(`${API_URL}/auth/me`, { 
+          headers: { Authorization: `Bearer ${token}` },
+          signal: AbortSignal.timeout(10000) // 10 second fetch timeout
+        })
         console.log('🔐 Hydration response status:', res.status)
         if (!res.ok) {
           console.error('🔐 Hydration failed with status:', res.status)
@@ -39,8 +59,12 @@ export function AuthProvider({ children }) {
         }
       } catch (error) {
         console.error('🔐 Auth hydration failed:', error)
-        setRole('guest'); setUser(null); setToken('')
+        // Only clear auth if it's a real error, not a network timeout
+        if (error.name !== 'AbortError') {
+          setRole('guest'); setUser(null); setToken('')
+        }
       } finally {
+        clearTimeout(timeoutId)
         setIsLoading(false)
       }
     }

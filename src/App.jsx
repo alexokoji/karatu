@@ -15,6 +15,14 @@ export default function App() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-700 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
+          <p className="text-xs text-gray-400 mt-2">Checking authentication...</p>
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-4 p-2 bg-gray-100 rounded text-xs text-gray-600">
+              <div>Role: {role}</div>
+              <div>Authenticated: {isAuthenticated ? 'Yes' : 'No'}</div>
+              <div>Loading: {isLoading ? 'Yes' : 'No'}</div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -29,6 +37,16 @@ export default function App() {
 
   // Debug logging
   console.log('App render - role:', role, 'isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
+  
+  // Show debug info in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 Auth Debug:', {
+      role,
+      isAuthenticated,
+      isLoading,
+      user: user ? { id: user.id, name: user.name } : null
+    });
+  }
   return (
     <div className={`min-h-screen flex flex-col ${role === 'tutor' ? '' : ''}`}>
       {role !== 'tutor' && (
