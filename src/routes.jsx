@@ -1,5 +1,5 @@
 import { createBrowserRouter } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
+import { useAuth } from './context/AuthContextSimple';
 import App from './App';
 import Home from './pages/Home';
 import Courses from './pages/Courses';

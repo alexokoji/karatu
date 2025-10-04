@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PaymentModal from '../components/PaymentModal'
 import TutorLayout from '../components/TutorLayout'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from "./context/AuthContextSimple"
 
 export default function TutorCourses() {
   const { token, user } = useAuth()

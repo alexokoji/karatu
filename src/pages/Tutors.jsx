@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from "./context/AuthContextSimple"
 import { API_URL } from '../config'
 
 export default function Tutors() {

@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from "./context/AuthContextSimple"
 
 const COURSE_CONTENT = {
   yoruba: {

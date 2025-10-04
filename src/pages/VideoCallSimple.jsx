@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from "./context/AuthContextSimple"
 import { API_URL, WS_URL } from '../config'
 import { io } from 'socket.io-client'
 

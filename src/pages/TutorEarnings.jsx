@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import TutorLayout from '../components/TutorLayout'
 import { Line } from 'react-chartjs-2'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from "./context/AuthContextSimple"
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 export default function TutorEarnings() {

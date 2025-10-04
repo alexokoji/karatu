@@ -12,7 +12,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from "./context/AuthContextSimple"
 import { API_URL } from '../config'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)

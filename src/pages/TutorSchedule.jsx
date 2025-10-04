@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import TutorLayout from '../components/TutorLayout'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from "./context/AuthContextSimple"
 import { API_URL } from '../config'
 
 export default function TutorSchedule() {
