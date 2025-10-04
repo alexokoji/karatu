@@ -81,8 +81,40 @@ function AuthStudent({ children }) {
 }
 
 function AuthTutor({ children }) {
-  const { isAuthenticated, role } = useAuth();
-  if (!isAuthenticated || role !== 'tutor') return <div className="px-6 py-10">Please log in as a tutor to view this page.</div>;
+  const { isAuthenticated, role, user } = useAuth();
+  
+  // Debug logging
+  console.log('🔍 AuthTutor check:', { isAuthenticated, role, user: user?.name });
+  
+  if (!isAuthenticated) {
+    return (
+      <div className="px-6 py-10">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-4">Authentication Required</h2>
+          <p className="text-gray-600 mb-4">Please log in to access the tutor dashboard.</p>
+          <a href="/login" className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+            Go to Login
+          </a>
+        </div>
+      </div>
+    );
+  }
+  
+  if (role !== 'tutor') {
+    return (
+      <div className="px-6 py-10">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-4">Access Denied</h2>
+          <p className="text-gray-600 mb-4">You need to be logged in as a tutor to view this page.</p>
+          <p className="text-sm text-gray-500 mb-4">Current role: {role}</p>
+          <a href="/login" className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+            Go to Login
+          </a>
+        </div>
+      </div>
+    );
+  }
+  
   return children;
 }
 

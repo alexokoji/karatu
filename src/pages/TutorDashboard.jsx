@@ -19,7 +19,10 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 import TutorLayout from '../components/TutorLayout'
 
 export default function TutorDashboard() {
-  const { token } = useAuth()
+  const { token, user, role, isAuthenticated } = useAuth()
+  
+  // Debug logging
+  console.log('🔍 TutorDashboard auth state:', { user: user?.name, role, isAuthenticated })
   const [period, setPeriod] = useState(() => localStorage.getItem('tutorEarningsPeriod') || 'Monthly')
   const [quizImgError, setQuizImgError] = useState(false)
   const [transactions, setTransactions] = useState([])

@@ -32,13 +32,17 @@ export function AuthProvider({ children }) {
     else localStorage.removeItem('authToken') 
   }, [token])
 
-  const value = useMemo(() => ({
-    role,
-    user,
-    token,
-    isLoading,
-    isAuthenticated: role !== 'guest',
-    setUser,
+  const value = useMemo(() => {
+    // Debug logging
+    console.log('🔍 AuthContext value:', { role, user: user?.name, token: !!token, isAuthenticated: role !== 'guest' })
+    
+    return {
+      role,
+      user,
+      token,
+      isLoading,
+      isAuthenticated: role !== 'guest',
+      setUser,
     async register({ name, email, password, role }) {
       console.log('🔐 Attempting registration:', { name, email, role })
       console.log('🔐 API_URL:', API_URL)

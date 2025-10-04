@@ -4,7 +4,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { FaBars, FaAngleDoubleLeft, FaAngleDoubleRight, FaTachometerAlt, FaChalkboardTeacher, FaUsers, FaComments, FaSignOutAlt } from 'react-icons/fa'
 
 export default function TutorLayout({ title = 'Dashboard', children }) {
-  const { logout, user } = useAuth()
+  const { logout, user, role, isAuthenticated } = useAuth()
+  
+  // Debug logging
+  console.log('🔍 TutorLayout auth state:', { user: user?.name, role, isAuthenticated })
+  
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
