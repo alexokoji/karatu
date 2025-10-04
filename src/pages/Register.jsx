@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useAuth } from "./context/AuthContextSimple"
+import { useAuth } from "../context/AuthContextSimple"
 
 export default function Register() {
   const { register } = useAuth()

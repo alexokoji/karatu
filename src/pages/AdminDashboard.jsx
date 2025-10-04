@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from "./context/AuthContextSimple"
+import { useAuth } from "../context/AuthContextSimple"
 import { API_URL } from '../config'
 
 export default function AdminDashboard() {

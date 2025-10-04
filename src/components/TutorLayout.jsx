@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useAuth } from "./context/AuthContextSimple"
+import { useAuth } from "../context/AuthContextSimple"
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { FaBars, FaAngleDoubleLeft, FaAngleDoubleRight, FaTachometerAlt, FaChalkboardTeacher, FaUsers, FaComments, FaSignOutAlt } from 'react-icons/fa'
 

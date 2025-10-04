@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import TutorLayout from '../components/TutorLayout'
 import { Line } from 'react-chartjs-2'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
-import { useAuth } from "./context/AuthContextSimple"
+import { useAuth } from "../context/AuthContextSimple"
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 export default function TutorEarnings() {
@@ -67,7 +67,7 @@ export default function TutorEarnings() {
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-lg border border-gray-200 p-4 text-center">
               <p className="text-xs text-gray-500">This Month</p>
-              <p className="text-lg font-bold">${'{'}txn.filter(t=> new Date(t.date).getMonth()===new Date().getMonth()).reduce((a,b)=> a + (Number(b.amount)||0), 0){'}'}</p>
+              <p className="text-lg font-bold">${txn.filter(t=> new Date(t.date).getMonth()===new Date().getMonth()).reduce((a,b)=> a + (Number(b.amount)||0), 0)}</p>
             </div>
             <div className="rounded-lg border border-gray-200 p-4 text-center">
               <p className="text-xs text-gray-500">Pending</p>
@@ -75,7 +75,7 @@ export default function TutorEarnings() {
             </div>
             <div className="rounded-lg border border-gray-200 p-4 text-center">
               <p className="text-xs text-gray-500">Total</p>
-              <p className="text-lg font-bold">${'{'}txn.reduce((a,b)=> a + (Number(b.amount)||0), 0){'}'}</p>
+              <p className="text-lg font-bold">${txn.reduce((a,b)=> a + (Number(b.amount)||0), 0)}</p>
             </div>
           </div>
           <button onClick={()=> setRequestOpen(true)} className="mt-4 w-full h-10 rounded-md bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold">Request Payout</button>
