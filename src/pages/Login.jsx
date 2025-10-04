@@ -14,12 +14,32 @@ export default function Login() {
     setError(''); setLoading(true)
     try {
       const res = await login({ email, password })
+      console.log('Login successful:', res)
       const role = res?.user?.role
-      if (role === 'student') navigate('/student')
-      else if (role === 'tutor') navigate('/tutor')
-      else if (role === 'admin') navigate('/admin')
-      else navigate('/')
-    } catch (e) { setError('Invalid email or password') } finally { setLoading(false) }
+      console.log('User role:', role)
+      
+      // Add a small delay to ensure state is updated
+      setTimeout(() => {
+        if (role === 'student') {
+          console.log('Navigating to student dashboard')
+          navigate('/student')
+        } else if (role === 'tutor') {
+          console.log('Navigating to tutor dashboard')
+          navigate('/tutor')
+        } else if (role === 'admin') {
+          console.log('Navigating to admin dashboard')
+          navigate('/admin')
+        } else {
+          console.log('Navigating to home')
+          navigate('/')
+        }
+      }, 100)
+    } catch (e) { 
+      console.error('Login failed:', e)
+      setError('Invalid email or password') 
+    } finally { 
+      setLoading(false) 
+    }
   }
   return (
     <div className="px-4 md:px-10 lg:px-20 py-10 max-w-lg mx-auto">

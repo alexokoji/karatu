@@ -3,10 +3,22 @@ import { useAuth } from './context/AuthContext';
 import { useState } from 'react';
 
 export default function App() {
-  const { role, isAuthenticated, loginStudent, loginTutor, loginAdmin, logout } = useAuth();
+  const { role, isAuthenticated, isLoading, loginStudent, loginTutor, loginAdmin, logout } = useAuth();
   const [loginOpen, setLoginOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Show loading state while auth is being determined
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-700 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const linkClass = (path) => {
     const base = "text-sm px-3 py-1 rounded-md transition-colors";
@@ -14,6 +26,9 @@ export default function App() {
     const active = "text-primary-700 font-semibold bg-primary-50";
     return `${base} ${location.pathname === path ? active : inactive}`;
   };
+
+  // Debug logging
+  console.log('App render - role:', role, 'isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
   return (
     <div className={`min-h-screen flex flex-col ${role === 'tutor' ? '' : ''}`}>
       {role !== 'tutor' && (
