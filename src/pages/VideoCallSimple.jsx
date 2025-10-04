@@ -7,7 +7,16 @@ import { io } from 'socket.io-client'
 export default function VideoCallSimple() {
   const { sessionId } = useParams()
   const navigate = useNavigate()
-  const { user, isAuthenticated, role } = useAuth()
+  const { user, isAuthenticated, role, token } = useAuth()
+  
+  // Debug authentication state
+  console.log('🔍 VideoCallSimple auth state:', { 
+    user: user?.name, 
+    role, 
+    isAuthenticated, 
+    token: !!token,
+    sessionId 
+  })
   
   // Core states
   const [sessionData, setSessionData] = useState(null)
@@ -32,21 +41,41 @@ export default function VideoCallSimple() {
   useEffect(() => {
     const loadSession = async () => {
       try {
-        const response = await fetch(`${API_URL}/private-sessions/${sessionId}`)
+        console.log('🔍 Loading session data for:', sessionId)
+        console.log('🔍 Using token:', !!token)
+        
+        const response = await fetch(`${API_URL}/private-sessions/${sessionId}`, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        console.log('🔍 Session response status:', response.status)
+        
         if (response.ok) {
           const data = await response.json()
+          console.log('🔍 Session data loaded:', data)
           setSessionData(data)
         } else {
+          console.error('🔍 Session not found:', response.status, response.statusText)
           setError('Session not found')
         }
       } catch (err) {
+        console.error('🔍 Failed to load session:', err)
         setError('Failed to load session')
       } finally {
         setLoading(false)
       }
     }
-    loadSession()
-  }, [sessionId])
+    
+    if (token && sessionId) {
+      loadSession()
+    } else {
+      console.log('🔍 No token or sessionId, skipping session load')
+      setLoading(false)
+    }
+  }, [sessionId, token])
 
   // Initialize video call like Zoom
   const initializeVideoCall = async () => {
