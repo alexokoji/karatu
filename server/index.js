@@ -393,6 +393,31 @@ app.post('/quizzes', auth(['tutor','admin']), (req, res) => {
 io.on('connection', (socket) => {
   console.log('🔗 User connected:', socket.id);
   
+  // Join user's personal room for call notifications
+  socket.on('join-user-room', (userId) => {
+    console.log(`👤 User ${socket.id} joining personal room: ${userId}`);
+    socket.join(`user-${userId}`);
+  });
+  
+  // Handle call initiation (tutor -> student)
+  socket.on('initiate-call', (callData) => {
+    console.log(`📞 Call initiated from ${callData.tutorId} to ${callData.studentId}`);
+    socket.to(`user-${callData.studentId}`).emit('incoming-call', callData);
+  });
+  
+  // Handle call declined by student
+  socket.on('call-declined', (data) => {
+    console.log(`📞 Call declined by student ${data.studentId}`);
+    socket.to(`user-${data.tutorId}`).emit('call-declined', data);
+  });
+  
+  // Handle call ended
+  socket.on('end-call', (data) => {
+    console.log(`📞 Call ended for session ${data.sessionId}`);
+    socket.to(`user-${data.studentId}`).emit('call-ended');
+    socket.to(`user-${data.tutorId}`).emit('call-ended');
+  });
+  
   socket.on('join-session', (sessionId) => {
     console.log(`🚪 User ${socket.id} joining session: ${sessionId}`);
     socket.join(sessionId);

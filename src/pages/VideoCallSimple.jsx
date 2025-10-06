@@ -91,15 +91,10 @@ export default function VideoCallSimple() {
         audio: true
       })
       
+      console.log('📹 Got user media stream:', stream)
+      console.log('📹 Stream tracks:', stream.getTracks())
+      
       setLocalStream(stream)
-      if (localVideoRef.current) {
-        console.log('📹 Setting local video srcObject')
-        localVideoRef.current.srcObject = stream
-        // Force video to play
-        localVideoRef.current.play().catch(e => console.error('Local video play error:', e))
-      } else {
-        console.log('📹 Local video ref not available')
-      }
       
       // 2. Connect to signaling server
       await connectToSignalingServer()
@@ -202,14 +197,7 @@ export default function VideoCallSimple() {
       console.log('📹 Stream tracks:', event.streams[0]?.getTracks())
       const stream = event.streams[0]
       setRemoteStream(stream)
-      if (remoteVideoRef.current) {
-        console.log('📹 Setting remote video srcObject')
-        remoteVideoRef.current.srcObject = stream
-        // Force video to play
-        remoteVideoRef.current.play().catch(e => console.error('Remote video play error:', e))
-      } else {
-        console.log('📹 Remote video ref not available')
-      }
+      console.log('📹 Remote stream set, useEffect will handle video element')
     }
 
     // Handle ICE candidates
@@ -356,6 +344,24 @@ export default function VideoCallSimple() {
     }
     navigate('/student')
   }
+
+  // Set local video stream when ref becomes available
+  useEffect(() => {
+    if (localStream && localVideoRef.current) {
+      console.log('📹 Setting local video srcObject (useEffect)')
+      localVideoRef.current.srcObject = localStream
+      localVideoRef.current.play().catch(e => console.error('Local video play error:', e))
+    }
+  }, [localStream])
+
+  // Set remote video stream when ref becomes available
+  useEffect(() => {
+    if (remoteStream && remoteVideoRef.current) {
+      console.log('📹 Setting remote video srcObject (useEffect)')
+      remoteVideoRef.current.srcObject = remoteStream
+      remoteVideoRef.current.play().catch(e => console.error('Remote video play error:', e))
+    }
+  }, [remoteStream])
 
   // Cleanup on unmount
   useEffect(() => {

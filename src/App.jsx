@@ -1,9 +1,10 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContextSimple';
 import { useState } from 'react';
+import CallNotification from './components/CallNotification';
 
 export default function App() {
-  const { role, isAuthenticated, isLoading, loginStudent, loginTutor, loginAdmin, logout } = useAuth();
+  const { role, isAuthenticated, isLoading, user, loginStudent, loginTutor, loginAdmin, logout } = useAuth();
   const [loginOpen, setLoginOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -120,6 +121,9 @@ export default function App() {
         </footer>
       )}
       {/* Modal login removed in favor of dedicated pages */}
+      
+      {/* Call Notification for Students */}
+      <CallNotification />
     </div>
   );
 }

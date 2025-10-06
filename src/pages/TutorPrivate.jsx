@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import TutorLayout from '../components/TutorLayout'
 import { useAuth } from "../context/AuthContextSimple"
-import { API_URL } from '../config'
+import { API_URL, WS_URL } from '../config'
+import { io } from 'socket.io-client'
 
 export default function TutorPrivate() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
+  const navigate = useNavigate()
   const [rate, setRate] = useState(() => { try { return Number(localStorage.getItem('tutorPrivateRate')) || 25 } catch { return 25 } })
   const [sessions, setSessions] = useState(() => { try { return JSON.parse(localStorage.getItem('tutorPrivateSessions')) || [] } catch { return [] } })
+  const [socket, setSocket] = useState(null)
   useEffect(() => { try { localStorage.setItem('tutorPrivateRate', String(rate)) } catch {} }, [rate])
   useEffect(() => { try { localStorage.setItem('tutorPrivateSessions', JSON.stringify(sessions)) } catch {} }, [sessions])
   useEffect(() => {
@@ -17,6 +20,30 @@ export default function TutorPrivate() {
     if (token) load()
   }, [token])
 
+  // Initialize socket for call notifications
+  useEffect(() => {
+    if (!user?.id) return
+
+    const newSocket = io(WS_URL, {
+      transports: ['websocket', 'polling'],
+      timeout: 10000,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5
+    })
+
+    newSocket.on('connect', () => {
+      console.log('📞 Tutor socket connected')
+      newSocket.emit('join-user-room', user.id)
+    })
+
+    setSocket(newSocket)
+
+    return () => {
+      newSocket.disconnect()
+    }
+  }, [user?.id])
+
   const accept = async (id) => {
     setSessions(prev => prev.map(s => s.id===id ? { ...s, status: 'accepted' } : s))
     try { await fetch(`${API_URL}/private-sessions/${id}`, { method: 'PUT', headers: { 'Content-Type':'application/json', Authorization: token?`Bearer ${token}`:undefined }, body: JSON.stringify({ status: 'accepted' }) }) } catch {}
@@ -24,6 +51,29 @@ export default function TutorPrivate() {
   const decline = async (id) => {
     setSessions(prev => prev.map(s => s.id===id ? { ...s, status: 'declined' } : s))
     try { await fetch(`${API_URL}/private-sessions/${id}`, { method: 'PUT', headers: { 'Content-Type':'application/json', Authorization: token?`Bearer ${token}`:undefined }, body: JSON.stringify({ status: 'declined' }) }) } catch {}
+  }
+
+  const initiateCall = async (session) => {
+    if (!socket) {
+      console.error('Socket not connected')
+      return
+    }
+
+    console.log('📞 Initiating call for session:', session.id)
+    
+    // Send call notification to student
+    socket.emit('initiate-call', {
+      sessionId: session.id,
+      tutorId: user.id,
+      tutorName: user.name,
+      studentId: session.studentId,
+      studentName: session.studentName,
+      topic: session.topic,
+      duration: session.duration || '60 minutes'
+    })
+
+    // Navigate to video call page
+    navigate(`/video/${session.id}`)
   }
 
   const computeDuration = (range) => {
@@ -85,9 +135,12 @@ export default function TutorPrivate() {
                 )}
                 {s.status==='accepted' && s.paid && (
                   <div className="mt-3">
-                    <Link to={`/video/${s.id}`} className="inline-flex items-center justify-center h-9 px-4 rounded-md bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold">
-                      Join Session
-                    </Link>
+                    <button 
+                      onClick={() => initiateCall(s)}
+                      className="inline-flex items-center justify-center h-9 px-4 rounded-md bg-green-600 hover:bg-green-700 text-white text-sm font-semibold"
+                    >
+                      📞 Start Call
+                    </button>
                   </div>
                 )}
               </div>
