@@ -573,6 +573,92 @@ export default function VideoCall() {
                     })
                     setLocalStream(stream)
                     setMediaPermission('granted')
+                    
+                    // Create peer connection
+                    const pc = new RTCPeerConnection({
+                      iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                      ]
+                    })
+                    
+                    // Add local stream to peer connection
+                    stream.getTracks().forEach(track => {
+                      pc.addTrack(track, stream)
+                    })
+                    
+                    // Handle remote stream
+                    pc.ontrack = (event) => {
+                      console.log('Received remote stream:', event.streams[0])
+                      setRemoteStream(event.streams[0])
+                    }
+                    
+                    // Handle ICE candidates
+                    pc.onicecandidate = (event) => {
+                      if (event.candidate && socket) {
+                        socket.emit('ice-candidate', {
+                          candidate: event.candidate,
+                          sessionId: currentSessionId
+                        })
+                      }
+                    }
+                    
+                    // Connection state monitoring
+                    pc.onconnectionstatechange = () => {
+                      console.log('🔗 Connection state changed:', pc.connectionState)
+                      if (pc.connectionState === 'connected') {
+                        console.log('✅ WebRTC connection established!')
+                      } else if (pc.connectionState === 'failed') {
+                        console.log('❌ WebRTC connection failed!')
+                      }
+                    }
+                    
+                    setPeerConnection(pc)
+                    
+                    // Set up socket event handlers for this peer connection
+                    if (socket) {
+                      // Handle incoming offers
+                      socket.on('offer', async (data) => {
+                        if (data.sessionId === currentSessionId && pc) {
+                          try {
+                            console.log('📥 Received offer, creating answer...')
+                            await pc.setRemoteDescription(data.offer)
+                            const answer = await pc.createAnswer()
+                            await pc.setLocalDescription(answer)
+                            socket.emit('answer', { answer, sessionId: currentSessionId })
+                            console.log('✅ Answer sent')
+                          } catch (error) {
+                            console.error('Error handling offer:', error)
+                          }
+                        }
+                      })
+                      
+                      // Handle incoming answers
+                      socket.on('answer', async (data) => {
+                        if (data.sessionId === currentSessionId && pc) {
+                          try {
+                            console.log('📥 Received answer')
+                            await pc.setRemoteDescription(data.answer)
+                            console.log('✅ Answer processed')
+                          } catch (error) {
+                            console.error('Error handling answer:', error)
+                          }
+                        }
+                      })
+                      
+                      // Handle ICE candidates
+                      socket.on('ice-candidate', async (data) => {
+                        if (data.sessionId === currentSessionId && pc) {
+                          try {
+                            await pc.addIceCandidate(data.candidate)
+                            console.log('✅ ICE candidate added')
+                          } catch (error) {
+                            console.error('Error adding ICE candidate:', error)
+                          }
+                        }
+                      })
+                    }
+                    
                     console.log('Manual video initialization successful')
                   } catch (error) {
                     console.error('Manual video initialization failed:', error)
