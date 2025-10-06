@@ -93,7 +93,12 @@ export default function VideoCallSimple() {
       
       setLocalStream(stream)
       if (localVideoRef.current) {
+        console.log('📹 Setting local video srcObject')
         localVideoRef.current.srcObject = stream
+        // Force video to play
+        localVideoRef.current.play().catch(e => console.error('Local video play error:', e))
+      } else {
+        console.log('📹 Local video ref not available')
       }
       
       // 2. Connect to signaling server
@@ -193,11 +198,17 @@ export default function VideoCallSimple() {
 
     // Handle remote stream
     pc.ontrack = (event) => {
-      console.log('📹 Received remote stream')
+      console.log('📹 Received remote stream:', event)
+      console.log('📹 Stream tracks:', event.streams[0]?.getTracks())
       const stream = event.streams[0]
       setRemoteStream(stream)
       if (remoteVideoRef.current) {
+        console.log('📹 Setting remote video srcObject')
         remoteVideoRef.current.srcObject = stream
+        // Force video to play
+        remoteVideoRef.current.play().catch(e => console.error('Remote video play error:', e))
+      } else {
+        console.log('📹 Remote video ref not available')
       }
     }
 
@@ -225,6 +236,21 @@ export default function VideoCallSimple() {
           }
         }, 2000)
       }
+    }
+
+    // ICE connection state monitoring
+    pc.oniceconnectionstatechange = () => {
+      console.log('🧊 ICE connection state:', pc.iceConnectionState)
+      if (pc.iceConnectionState === 'connected') {
+        console.log('✅ ICE connection established!')
+      } else if (pc.iceConnectionState === 'failed') {
+        console.log('❌ ICE connection failed!')
+      }
+    }
+
+    // ICE gathering state monitoring
+    pc.onicegatheringstatechange = () => {
+      console.log('🔍 ICE gathering state:', pc.iceGatheringState)
     }
 
     peerConnectionRef.current = pc
@@ -393,6 +419,9 @@ export default function VideoCallSimple() {
               {error}
             </div>
           )}
+          <div className="text-xs text-gray-400">
+            Local: {localStream ? '✅' : '❌'} | Remote: {remoteStream ? '✅' : '❌'}
+          </div>
         </div>
       </div>
 
@@ -425,7 +454,12 @@ export default function VideoCallSimple() {
                   ref={remoteVideoRef}
                   autoPlay
                   playsInline
+                  muted={false}
                   className="w-full h-full object-cover"
+                  onLoadedMetadata={() => console.log('📹 Remote video metadata loaded')}
+                  onCanPlay={() => console.log('📹 Remote video can play')}
+                  onPlay={() => console.log('📹 Remote video started playing')}
+                  onError={(e) => console.error('📹 Remote video error:', e)}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full">
@@ -436,6 +470,7 @@ export default function VideoCallSimple() {
                       </svg>
                     </div>
                     <p className="text-gray-400">Waiting for other participant...</p>
+                    <p className="text-xs text-gray-500 mt-2">Remote stream: {remoteStream ? 'Available' : 'Not available'}</p>
                   </div>
                 </div>
               )}
@@ -443,13 +478,26 @@ export default function VideoCallSimple() {
 
             {/* Local video (picture-in-picture) */}
             <div className="absolute bottom-4 right-4 w-64 h-48 bg-gray-800 rounded-lg overflow-hidden">
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
+              {localStream ? (
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover"
+                  onLoadedMetadata={() => console.log('📹 Local video metadata loaded')}
+                  onCanPlay={() => console.log('📹 Local video can play')}
+                  onPlay={() => console.log('📹 Local video started playing')}
+                  onError={(e) => console.error('📹 Local video error:', e)}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-white text-xs">
+                  <div className="text-center">
+                    <p>Local video</p>
+                    <p>Stream: {localStream ? 'Available' : 'Not available'}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
