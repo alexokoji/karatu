@@ -36,6 +36,7 @@ export default function VideoCall() {
   const [videoInitialized, setVideoInitialized] = useState(false)
   const localVideoRef = useRef(null)
   const remoteVideoRef = useRef(null)
+  const pendingCandidates = useRef([])
 
   // Use sessionId from URL params or fallback to default
   const currentSessionId = sessionId || 'session-123'
@@ -142,6 +143,12 @@ export default function VideoCall() {
     newSocket.on('connect', () => {
       console.log('Connected to signaling server')
       setIsConnected(true)
+      
+      // Add a small delay to ensure socket is fully ready
+      setTimeout(() => {
+        console.log('Socket fully ready, joining session:', currentSessionId)
+        newSocket.emit('join-session', currentSessionId)
+      }, 500)
     })
     
     newSocket.on('disconnect', (reason) => {
@@ -202,6 +209,7 @@ export default function VideoCall() {
         // Add comprehensive connection state monitoring
         pc.onconnectionstatechange = () => {
           console.log('🔗 Connection state changed:', pc.connectionState)
+          console.log('✅ Peer connection states:', pc.connectionState, pc.iceConnectionState)
           if (pc.connectionState === 'connected') {
             console.log('✅ WebRTC connection established!')
           } else if (pc.connectionState === 'failed') {
@@ -345,6 +353,14 @@ export default function VideoCall() {
         console.log('❌ No peer connection available for ICE candidate')
         return
       }
+      
+      // Queue ICE candidates if remote description is not set yet
+      if (!peerConnection.remoteDescription) {
+        console.log('🧊 Queuing ICE candidate (no remote description yet)')
+        pendingCandidates.current.push(data.candidate)
+        return
+      }
+      
       try {
         console.log('🧊 Received ICE candidate, adding...')
         console.log('🧊 ICE candidate:', data.candidate.candidate)
@@ -355,9 +371,18 @@ export default function VideoCall() {
       }
     }
 
-    socket.on('offer', handleOffer)
-    socket.on('answer', handleAnswer)
-    socket.on('ice-candidate', handleIceCandidate)
+    socket.on('offer', (data) => {
+      console.log('📥 Offer received:', data)
+      handleOffer(data)
+    })
+    socket.on('answer', (data) => {
+      console.log('📥 Answer received:', data)
+      handleAnswer(data)
+    })
+    socket.on('ice-candidate', (data) => {
+      console.log('📥 ICE received:', data)
+      handleIceCandidate(data)
+    })
     socket.on('user-joined', (socketId) => {
       console.log('👥 User joined session:', socketId)
       console.log('👤 Current user role:', user?.role)
@@ -370,24 +395,58 @@ export default function VideoCall() {
       }, 1000) // Small delay to ensure both sides are ready
     })
 
+    // Handle participants list - if there are existing users, create offer
+    socket.on('participants', (participants) => {
+      console.log('👥 Received participants list:', participants)
+      if (participants.length > 0 && peerConnection) {
+        console.log('🚀 Found existing participants, creating offer...')
+        setTimeout(() => {
+          createAndSendOffer()
+        }, 1000)
+      }
+    })
+
     return () => {
       socket.off('offer', handleOffer)
       socket.off('answer', handleAnswer)
       socket.off('ice-candidate', handleIceCandidate)
       socket.off('user-joined')
+      socket.off('participants')
     }
   }, [socket, peerConnection, currentSessionId])
+
+  // Process queued ICE candidates when remote description is set
+  useEffect(() => {
+    if (peerConnection && peerConnection.remoteDescription && pendingCandidates.current.length > 0) {
+      console.log('🧊 Processing queued ICE candidates:', pendingCandidates.current.length)
+      pendingCandidates.current.forEach(async (candidate) => {
+        try {
+          await peerConnection.addIceCandidate(candidate)
+          console.log('✅ Queued ICE candidate added')
+        } catch (error) {
+          console.error('❌ Error adding queued ICE candidate:', error)
+        }
+      })
+      pendingCandidates.current = []
+    }
+  }, [peerConnection?.remoteDescription])
 
   // Update video elements when streams change
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream
+      localVideoRef.current.play().catch((error) => {
+        console.warn('Local video autoplay prevented:', error)
+      })
     }
   }, [localStream])
 
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream
+      remoteVideoRef.current.play().catch((error) => {
+        console.warn('Remote video autoplay prevented:', error)
+      })
     }
   }, [remoteStream])
 
@@ -606,6 +665,7 @@ export default function VideoCall() {
                     // Connection state monitoring
                     pc.onconnectionstatechange = () => {
                       console.log('🔗 Connection state changed:', pc.connectionState)
+                      console.log('✅ Peer connection states:', pc.connectionState, pc.iceConnectionState)
                       if (pc.connectionState === 'connected') {
                         console.log('✅ WebRTC connection established!')
                       } else if (pc.connectionState === 'failed') {
@@ -646,9 +706,16 @@ export default function VideoCall() {
                         }
                       })
                       
-                      // Handle ICE candidates
+                      // Handle ICE candidates with queuing
                       socket.on('ice-candidate', async (data) => {
                         if (data.sessionId === currentSessionId && pc) {
+                          // Queue ICE candidates if remote description is not set yet
+                          if (!pc.remoteDescription) {
+                            console.log('🧊 Queuing ICE candidate (no remote description yet)')
+                            pendingCandidates.current.push(data.candidate)
+                            return
+                          }
+                          
                           try {
                             await pc.addIceCandidate(data.candidate)
                             console.log('✅ ICE candidate added')
