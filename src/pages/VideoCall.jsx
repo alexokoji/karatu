@@ -37,6 +37,8 @@ export default function VideoCall() {
   const localVideoRef = useRef(null)
   const remoteVideoRef = useRef(null)
   const pendingCandidates = useRef([])
+  const isInitiator = useRef(false)
+  const signalingComplete = useRef(false)
 
   // Use sessionId from URL params or fallback to default
   const currentSessionId = sessionId || 'session-123'
@@ -57,6 +59,9 @@ export default function VideoCall() {
     setMediaPermission('prompt')
     setIsMuted(false)
     setIsVideoOff(false)
+    isInitiator.current = false
+    signalingComplete.current = false
+    pendingCandidates.current = []
   }
 
   // Reset when sessionId changes
@@ -295,8 +300,16 @@ export default function VideoCall() {
         console.log('❌ No peer connection available for offer')
         return
       }
+      
+      // Prevent duplicate offers
+      if (signalingComplete.current || isInitiator.current || peerConnection.signalingState !== 'stable') {
+        console.log('📤 Ignoring offer creation - already initiated or signaling in progress')
+        return
+      }
+      
       try {
         console.log('📤 Creating and sending offer...')
+        isInitiator.current = true
         const offer = await peerConnection.createOffer()
         console.log('📤 Offer created:', offer.type)
         await peerConnection.setLocalDescription(offer)
@@ -305,6 +318,7 @@ export default function VideoCall() {
         console.log('✅ Offer sent successfully to session:', currentSessionId)
       } catch (error) {
         console.error('❌ Error creating/sending offer:', error)
+        isInitiator.current = false
       }
     }
 
@@ -313,6 +327,13 @@ export default function VideoCall() {
         console.log('❌ No peer connection available for offer handling')
         return
       }
+      
+      // Prevent duplicate offer handling
+      if (signalingComplete.current || peerConnection.signalingState !== 'stable') {
+        console.log('📥 Ignoring offer - signaling already in progress or complete')
+        return
+      }
+      
       try {
         console.log('📥 Received offer, creating answer...')
         console.log('📥 Offer type:', data.offer.type)
@@ -328,6 +349,7 @@ export default function VideoCall() {
           sessionId: currentSessionId
         })
         console.log('✅ Answer sent successfully to session:', currentSessionId)
+        signalingComplete.current = true
       } catch (error) {
         console.error('❌ Error handling offer:', error)
       }
@@ -338,11 +360,19 @@ export default function VideoCall() {
         console.log('❌ No peer connection available for answer handling')
         return
       }
+      
+      // Prevent duplicate answer handling
+      if (signalingComplete.current || peerConnection.signalingState !== 'have-local-offer') {
+        console.log('📥 Ignoring answer - signaling already complete or wrong state')
+        return
+      }
+      
       try {
         console.log('📥 Received answer, setting remote description...')
         console.log('📥 Answer type:', data.answer.type)
         await peerConnection.setRemoteDescription(data.answer)
         console.log('✅ Answer processed successfully - connection should be established!')
+        signalingComplete.current = true
       } catch (error) {
         console.error('❌ Error handling answer:', error)
       }
@@ -626,6 +656,12 @@ export default function VideoCall() {
                   console.log('Manual video initialization triggered')
                   try {
                     setVideoInitialized(true) // Prevent multiple clicks
+                    
+                    // Reset signaling state for fresh start
+                    signalingComplete.current = false
+                    isInitiator.current = false
+                    pendingCandidates.current = []
+                    
                     const stream = await navigator.mediaDevices.getUserMedia({
                       video: true,
                       audio: true
@@ -743,29 +779,35 @@ export default function VideoCall() {
               <button 
                 onClick={async () => {
                   console.log('Manual connection attempt triggered')
-                  if (socket) {
+                  if (socket && peerConnection) {
+                    // Reset signaling state for manual retry
+                    signalingComplete.current = false
+                    isInitiator.current = false
+                    
                     // Re-join the session to trigger user-joined event
                     socket.emit('join-session', currentSessionId)
                     console.log('Re-joined session:', currentSessionId)
                     
                     // Wait a bit then try to send offer
                     setTimeout(async () => {
-                      if (peerConnection) {
+                      if (peerConnection && !isInitiator.current && !signalingComplete.current) {
                         try {
                           console.log('Creating manual offer...')
+                          isInitiator.current = true
                           const offer = await peerConnection.createOffer()
                           await peerConnection.setLocalDescription(offer)
                           socket.emit('offer', { offer, sessionId: currentSessionId })
                           console.log('Manual offer sent successfully')
                         } catch (error) {
                           console.error('Error creating/sending manual offer:', error)
+                          isInitiator.current = false
                         }
                       } else {
-                        console.log('No peer connection available for manual offer')
+                        console.log('No peer connection available for manual offer or already initiated')
                       }
                     }, 2000)
                   } else {
-                    console.log('No socket available for manual connection')
+                    console.log('No socket or peer connection available for manual connection')
                   }
                 }}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
