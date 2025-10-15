@@ -11,11 +11,7 @@ export default function EnrolledCourse() {
   const tutorMatch = tutorCourses.find(c => c.slug === slug && c.published)
   const lessons = tutorMatch && Array.isArray(tutorMatch.lessonsData) && tutorMatch.lessonsData.length > 0
     ? tutorMatch.lessonsData
-    : [
-      { id: '1', title: 'Introduction & Greetings', duration: '12m' },
-      { id: '2', title: 'Alphabet & Tones', duration: '18m' },
-      { id: '3', title: 'Numbers & Counting', duration: '22m' },
-    ]
+    : []
   const storageKey = `studentCourseProgress:${slug}`
   const [completed, setCompleted] = useState(() => {
     try {
@@ -58,12 +54,17 @@ export default function EnrolledCourse() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">Lessons</h2>
               <div className="flex items-center gap-2">
-                <Link to={`/lessons/${firstIncomplete.id}?course=${slug}`} className="h-10 px-4 inline-flex items-center rounded-lg bg-primary-700 hover:bg-primary-800 text-white text-sm font-bold">Continue</Link>
+                {firstIncomplete ? (
+                  <Link to={`/lessons/${firstIncomplete.id}?course=${slug}`} className="h-10 px-4 inline-flex items-center rounded-lg bg-primary-700 hover:bg-primary-800 text-white text-sm font-bold">Continue</Link>
+                ) : null}
                 {completed.length > 0 && completed.length < lessons.length && (
                   <button onClick={() => setCompleted(lessons.map(l=>l.id))} className="h-10 px-4 rounded-lg bg-white text-primary-700 border border-primary-700 hover:bg-primary-50 text-sm font-bold">Mark all done</button>
                 )}
               </div>
             </div>
+            {lessons.length === 0 ? (
+              <p className="text-sm text-gray-500">No lessons available yet.</p>
+            ) : (
             <div className="divide-y divide-gray-100">
               {lessons.map(l => (
                 <div key={l.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-md">
@@ -94,6 +95,7 @@ export default function EnrolledCourse() {
                 </div>
               ))}
             </div>
+            )}
           </div>
         </div>
         <aside className="w-full md:w-80 shrink-0">

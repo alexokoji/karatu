@@ -61,11 +61,16 @@ export default function StudentDashboard() {
             setPrivateSessions(sessionsData)
           }
           
-          // Load quizzes (mock data for now - would come from backend)
-          setQuizzes([
-            { id: 1, title: 'Yoruba Quiz 1', due: 'Due: July 20, 2024', course: 'Yoruba for Beginners' },
-            { id: 2, title: 'Igbo Quiz 2', due: 'Due: July 25, 2024', course: 'Igbo Intermediate' },
-          ])
+          // Load quizzes from backend
+          try {
+            const quizRes = await fetch(`${API_URL}/quizzes`, {
+              headers: { Authorization: `Bearer ${token}` }
+            })
+            if (quizRes.ok) {
+              const quizData = await quizRes.json()
+              if (Array.isArray(quizData)) setQuizzes(quizData)
+            }
+          } catch {}
           
           // Calculate stats from transactions
           const totalStudyTime = currentTxnData.reduce((sum, t) => sum + (t.type === 'Course' ? 45 : 0), 0) // 45 mins per course
@@ -96,18 +101,8 @@ export default function StudentDashboard() {
     }).filter(Boolean)
   }, [transactions, courses])
 
-  // Fallback to static data if no backend data
-  const staticEnrolled = [
-    { title: 'Yoruba for Beginners', totalLessons: 10, img: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=800' },
-    { title: 'Igbo Intermediate', totalLessons: 12, img: 'https://images.pexels.com/photos/3184325/pexels-photo-3184325.jpeg?auto=compress&cs=tinysrgb&w=800' },
-    { title: 'Hausa Advanced', totalLessons: 8, img: 'https://images.pexels.com/photos/3184643/pexels-photo-3184643.jpeg?auto=compress&cs=tinysrgb&w=800' },
-  ]
-  const allEnrolled = enrolledCourses.length > 0 ? enrolledCourses : staticEnrolled
-  const fallbackByCourse = {
-    'Yoruba for Beginners': 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=800',
-    'Igbo Intermediate': 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800',
-    'Hausa Advanced': 'https://images.pexels.com/photos/3184325/pexels-photo-3184325.jpeg?auto=compress&cs=tinysrgb&w=800',
-  };
+  // No static fallback for enrolled courses; show empty state instead
+  const fallbackImage = 'https://images.unsplash.com/photo-1515165562835-c3b8c1eaab2a?auto=format&fit=crop&w=800&q=80'
 
   const progressData = useMemo(() => {
     // Generate study time data from transactions
@@ -135,14 +130,7 @@ export default function StudentDashboard() {
       })
     }
     
-    // Fallback to static data if no transactions
-    if (transactions.length === 0) {
-      const weekly = { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], data: [60, 40, 50, 70, 30, 20, 55] }
-      const monthly = { labels: ['W1','W2','W3','W4'], data: [180, 220, 200, 240] }
-      const src = period === 'Monthly' ? monthly : weekly
-      labels = src.labels
-      data = src.data
-    }
+    // Do not inject static data; if no transactions, keep zeros
     
     return {
       labels,
@@ -184,15 +172,18 @@ export default function StudentDashboard() {
           <div className="col-span-1 lg:col-span-2">
             <section className="mb-8">
               <h2 className="mb-4 text-2xl font-bold text-gray-900">Enrolled Courses</h2>
+              {enrolledCourses.length === 0 ? (
+                <p className="text-sm text-gray-500">You have not enrolled in any courses yet.</p>
+              ) : (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {allEnrolled.map((c) => (
+                {enrolledCourses.map((c) => (
                   <button onClick={() => setLastViewed(c.title)} key={c.title} className={`text-left group relative flex flex-col overflow-hidden rounded-xl border bg-white/70 backdrop-blur-sm shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 hover:border-primary-200 active:translate-y-px active:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 ${lastViewed === c.title ? 'border-primary-300 ring-2 ring-primary-200' : 'border-gray-200'}`}>
                     <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-primary-50/60 via-transparent to-primary-100/60" />
                     <img
                       src={c.img}
                       alt={c.title}
                       className="h-40 w-full object-cover"
-                      onError={(e) => { e.currentTarget.src = fallbackByCourse[c.title] || 'https://images.unsplash.com/photo-1515165562835-c3b8c1eaab2a?auto=format&fit=crop&w=800&q=80'; }}
+                      onError={(e) => { e.currentTarget.src = fallbackImage }}
                     />
                     <div className="flex flex-1 flex-col p-4">
                       <h3 className="font-bold text-gray-800">{c.title}</h3>
@@ -226,6 +217,7 @@ export default function StudentDashboard() {
                   </button>
                 ))}
               </div>
+              )}
             </section>
 
             <section>

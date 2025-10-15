@@ -1,32 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from "../context/AuthContextSimple"
 
-const COURSE_CONTENT = {
-  yoruba: {
-    title: 'Yoruba Language Course',
-    img: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    lessons: 12,
-    level: 'Beginner',
-    price: 29.99,
-    summary: 'Master greetings, pronunciation, and cultural context for everyday conversation.',
-  },
-  swahili: {
-    title: 'Swahili Language Course',
-    img: 'https://images.pexels.com/photos/927022/pexels-photo-927022.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    lessons: 15,
-    level: 'Intermediate',
-    price: 39.99,
-    summary: 'Build fluency through vocabulary expansion and practical dialogues.',
-  },
-  igbo: {
-    title: 'Igbo Language Course',
-    img: 'https://images.pexels.com/photos/3184325/pexels-photo-3184325.jpeg?auto=compress&cs=tinysrgb&w=1200',
-    lessons: 10,
-    level: 'Beginner',
-    price: 24.99,
-    summary: 'Start speaking Igbo with foundational grammar and common phrases.',
-  },
-}
+// Removed static COURSE_CONTENT fallback; rely on tutor-created courses only
 
 export default function CourseDetails() {
   const { slug } = useParams()
@@ -34,7 +9,6 @@ export default function CourseDetails() {
   const { role, isAuthenticated } = useAuth()
   const tutorCourses = (() => { try { return JSON.parse(localStorage.getItem('tutorCourses')) || [] } catch { return [] } })()
   const tutorMatch = tutorCourses.find(c => c.slug === slug && c.published)
-  const fallback = COURSE_CONTENT[slug]
   const course = tutorMatch ? {
     title: tutorMatch.title,
     img: tutorMatch.thumb || 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=1200',
@@ -44,7 +18,7 @@ export default function CourseDetails() {
     summary: tutorMatch.description || 'Learn with a dedicated tutor at your pace.',
     syllabus: tutorMatch.syllabus || [],
     tutorName: tutorMatch.tutorName || 'Tutor User',
-  } : fallback || COURSE_CONTENT.yoruba
+  } : null
 
   const previewLessons = (course.syllabus || []).slice(0, 3)
   const isEnrolled = (() => { try { const raw = localStorage.getItem('studentEnrollments'); const arr = raw ? JSON.parse(raw) : []; return arr.includes(slug) } catch { return false } })()
@@ -72,6 +46,12 @@ export default function CourseDetails() {
   return (
     <div className="px-4 md:px-10 lg:px-20 py-10">
       <div className="mb-4"><Link to="/courses" className="text-primary-700 hover:underline">← Back to Courses</Link></div>
+      {!course ? (
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h1 className="text-2xl font-bold mb-2">Course not found</h1>
+          <p className="text-gray-600">This course is unavailable or has not been published.</p>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm">
           <img src={course.img} alt={course.title} className="w-full h-72 object-cover" />
@@ -102,7 +82,7 @@ export default function CourseDetails() {
           </div>
         </div>
       </div>
-      {previewLessons.length > 0 && (
+      {course && previewLessons.length > 0 && (
         <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4">Preview Lessons</h2>
           <ol className="list-decimal pl-6 space-y-1 text-gray-800">
@@ -112,7 +92,7 @@ export default function CourseDetails() {
           </ol>
         </div>
       )}
-      {course.syllabus && course.syllabus.length > 0 && (
+      {course && course.syllabus && course.syllabus.length > 0 && (
         <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4">Syllabus</h2>
           <ol className="list-decimal pl-6 space-y-1 text-gray-800">
@@ -121,6 +101,7 @@ export default function CourseDetails() {
             ))}
           </ol>
         </div>
+      )}
       )}
     </div>
   )
